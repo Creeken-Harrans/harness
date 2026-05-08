@@ -50,6 +50,13 @@ export type AgentEvent =
       data: string;
     }
   | {
+      type: "tool_progress";
+      runId: string;
+      toolCallId: string;
+      message: string;
+      data?: unknown;
+    }
+  | {
       type: "tool_call_end";
       runId: string;
       toolCallId: string;

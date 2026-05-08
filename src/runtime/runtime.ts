@@ -5,6 +5,7 @@ import type { ToolRunner } from "../tools/runner.js";
 import type { AppConfig } from "../config/config.js";
 import type { AgentEvent, AgentResult } from "./events.js";
 import { runAgentLoop } from "./loop.js";
+import { createAgent } from "../agents/index.js";
 
 export class AgentRuntime {
   constructor(
@@ -16,16 +17,25 @@ export class AgentRuntime {
   ) {}
 
   run(input: string): AsyncGenerator<AgentEvent, AgentResult> {
-    return runAgentLoop(
-      {
-        config: this.config,
-        client: this.client,
-        context: this.context,
-        session: this.session,
-        toolRunner: this.toolRunner,
-      },
-      input,
-    );
+    const deps = {
+      config: this.config,
+      client: this.client,
+      context: this.context,
+      session: this.session,
+      toolRunner: this.toolRunner,
+    };
+    const agent = createAgent(this.config.agent);
+    return agent.run(input, {
+      config: this.config,
+      client: this.client,
+      contextBuilder: this.context,
+      toolRegistry: this.toolRunner.registry,
+      toolRunner: this.toolRunner,
+      memoryStore: this.toolRunner.memory,
+      workspace: this.toolRunner.workspace,
+      notes: this.toolRunner.notes,
+      runLoop: (loopInput: string) => runAgentLoop(deps, loopInput),
+    });
   }
 
   async runOnce(input: string): Promise<string> {

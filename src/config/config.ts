@@ -1,8 +1,9 @@
 import path from "node:path";
-import { enumEnv, intEnv, loadDotEnv } from "./env.js";
+import { boolEnv, enumEnv, intEnv, loadDotEnv } from "./env.js";
 
 export type ThinkingMode = "enabled" | "disabled";
 export type ApprovalMode = "always" | "shell" | "never";
+export type HarnessAgentName = "simple" | "react" | "plan" | "reflection" | "coding" | "research";
 
 export type AppConfig = {
   apiKey: string;
@@ -17,6 +18,8 @@ export type AppConfig = {
   shellTimeoutMs: number;
   maxToolOutputChars: number;
   maxSteps: number;
+  allowDangerousTools: boolean;
+  agent: HarnessAgentName;
 };
 
 function firstPositiveIntEnv(names: string[], fallback: number): number {
@@ -48,5 +51,7 @@ export function readConfig(): AppConfig {
     shellTimeoutMs: intEnv("HARNESS_SHELL_TIMEOUT_MS", 20_000),
     maxToolOutputChars: intEnv("HARNESS_MAX_TOOL_OUTPUT_CHARS", 12_000),
     maxSteps: intEnv("HARNESS_MAX_STEPS", 6),
+    allowDangerousTools: boolEnv("HARNESS_ALLOW_DANGEROUS_TOOLS", false),
+    agent: enumEnv("HARNESS_AGENT", ["simple", "react", "plan", "reflection", "coding", "research"] as const, "simple"),
   };
 }

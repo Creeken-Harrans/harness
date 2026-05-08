@@ -35,6 +35,12 @@ export function intEnv(name: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+export function boolEnv(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  return ["1", "true", "yes", "on", "enabled"].includes(raw.trim().toLowerCase());
+}
+
 export function enumEnv<T extends string>(name: string, values: readonly T[], fallback: T): T {
   const raw = process.env[name] as T | undefined;
   if (raw && values.includes(raw)) return raw;

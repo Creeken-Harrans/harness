@@ -1,76 +1,42 @@
 # Architecture
 
-这个仓库正在从 DeepSeek Mini Harness 迁移为 TypeScript-first Agent Harness Runtime。核心定位保持不变：
+This harness is a DeepSeek-first TypeScript agent runtime. DeepSeekClient remains the only primary model client. The project uses DeepSeek/OpenAI-compatible messages and tools because DeepSeek supports that schema, not because the runtime is a multi-provider framework.
 
-- DeepSeek 是唯一主模型 API 层。
-- API message/tool schema 保持 OpenAI-compatible，因为 DeepSeek 本身兼容这类格式。
-- 不引入重型 ModelProvider 抽象。
-- Python/Rust 只作为未来辅助 worker，不是第一阶段主 runtime。
+## Runtime Flow
 
-## Current Phase
+1. CLI receives user input.
+2. AgentRuntime selects an agent mode from HARNESS_AGENT or /agent.
+3. ContextBuilder gathers, selects, and structures DeepSeek-compatible messages.
+4. DeepSeekClient streams model deltas.
+5. Runtime accumulates assistant tool calls.
+6. ToolRunner resolves tools through ToolRegistry, checks risk policy, executes, and streams ToolEvent as AgentEvent.
+7. Tool observations are serialized back as bounded tool messages.
+8. TraceWriter writes data/traces/run-id.jsonl.
+9. TrajectoryRecorder writes data/trajectories/run-id.json.
 
-Phase 1 已落地 streaming runtime foundation：
+## Main Directories
 
-- `src/deepseek/client.ts`：DeepSeek `chatOnce` / `chatStream`。
-- `src/deepseek/stream.ts`：SSE parser，解析 `content`、`reasoning_content`、`tool_calls` delta。
-- `src/runtime/events.ts`：统一 `AgentEvent`。
-- `src/runtime/loop.ts`：模型 -> 工具 -> 模型的事件驱动 loop。
-- `src/terminal/stream.ts`：Node `spawn` stdout/stderr 实时 streaming。
-- `src/runtime/trace.ts`：`data/traces/<run-id>.jsonl` trace。
-- `src/cli/renderer.ts`：实时渲染 LLM delta 和 terminal output。
+- src/deepseek: DeepSeek API client and SSE stream parser.
+- src/runtime: AgentEvent, loop, trace, runtime wrapper.
+- src/tools: Tool interface, registry, runner, permissions, core tools.
+- src/workspace: workspace root, path policy, file store, git, patch helpers.
+- src/context: gather/select/structure/compress/budget context engineering.
+- src/memory: memory interfaces and JSON compatibility wrapper.
+- src/notes: long-running task notes, todos, decisions, errors, progress.
+- src/agents: simple, react, plan, reflection, coding, research agent modes.
+- src/mcp and src/a2a: protocol extension points.
+- src/eval: minimal evaluation harness.
 
-旧顶层文件如 `src/deepseek.ts`、`src/runtime.ts`、`src/terminal.ts` 保留为 compatibility re-export，避免一次性破坏现有 import。
+## Agent Families
 
-## Harness Loop
+- simple: default tool-calling loop.
+- react: ReAct-style action/observation loop over DeepSeek tool calling.
+- plan: visible plan, notes/todo recording, then execution.
+- reflection: final self-check summary and one correction pass by prompt contract.
+- coding: inspect-first local coding workflow with file/git/shell tools.
+- research: local-document planner/gather/synthesize workflow.
 
-```text
-user input
-  ↓
-ContextManager builds messages
-  ↓
-DeepSeekClient.chatStream
-  ↓
-AgentEvent: llm_delta / llm_reasoning_delta / tool_call_delta
-  ↓
-assistant final? ── yes → AgentEvent(done)
-  ↓ no
-ToolRunner executes tool
-  ↓
-AgentEvent: tool_stdout / tool_stderr / tool_call_end
-  ↓
-tool result appended as tool message
-  ↓
-DeepSeekClient.chatStream again
-```
+## Compatibility
 
-Terminal stdout/stderr is streamed live to the CLI. The observation written back to the model is a structured JSON result with bounded stdout/stderr capture.
+Top-level files such as src/runtime.ts, src/deepseek.ts, src/terminal.ts, src/config.ts, and src/commands.ts remain compatibility re-exports. Old src/tools/schema.ts now exports registry-generated DeepSeek tool definitions.
 
-## hello-agents Mapping
-
-| hello-agents idea | This harness boundary |
-|---|---|
-| 自研 Agent Runtime | `src/runtime/*` |
-| ReAct loop | current model/tool/model loop, later `src/agents/react-agent.ts` |
-| Plan-and-Solve | future `src/agents/plan-execute-agent.ts` |
-| Reflection | future `src/agents/reflection-agent.ts` |
-| Context Engineering | current `src/context.ts`, future `src/context/*` |
-| Memory / RAG | current JSON `src/memory.ts`, future `src/memory/*` and `python/rag` |
-| MCP tools | future `src/mcp/*` adapter into ToolRegistry |
-| A2A / multi-agent | future `src/a2a/*` local bus |
-| Agentic RL trajectories | future `src/trajectories/*` export |
-| Evaluation harness | future `src/eval/*` |
-
-## Migration Policy
-
-当前代码保留能跑的旧模块，逐步拆分：
-
-- 保留：`context.ts`、`memory.ts`、`session.ts`、`tools/schema.ts`。
-- 已迁移并保留兼容层：`config.ts`、`deepseek.ts`、`runtime.ts`、`terminal.ts`、`commands.ts`。
-- 下一阶段拆分：`tools/runner.ts` 到 ToolRegistry，随后 workspace-aware file/git/patch tools。
-
-## Limits
-
-- 当前 shell safety 仍是 approval + hard deny regex，不是强 sandbox。
-- 当前 tool runner 仍有硬编码 switch，Phase 2 会迁移到 registry。
-- 当前 context builder 仍是旧 `ContextManager`，Phase 4 会拆成 Gather / Select / Structure / Compress。
-- 当前 trace 不记录 API key，并做基础 redaction；后续会加入审计日志和 trajectory export。

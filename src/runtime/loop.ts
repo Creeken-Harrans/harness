@@ -3,13 +3,13 @@ import type { DeepSeekClient } from "../deepseek/client.js";
 import type { ContextManager } from "../context.js";
 import type { SessionStore } from "../session.js";
 import type { ToolRunner } from "../tools/runner.js";
-import { tools } from "../tools/schema.js";
 import type { ChatMessage, ToolCall } from "../messages/message.js";
 import { toolResultToMessage } from "../messages/serializers.js";
 import type { ModelStreamEvent } from "../deepseek/types.js";
 import type { AppConfig } from "../config/config.js";
 import type { AgentEvent, AgentResult } from "./events.js";
 import { TraceWriter } from "./trace.js";
+import { TrajectoryRecorder } from "../trajectories/exporter.js";
 
 type RuntimeDeps = {
   config: AppConfig;
@@ -76,9 +76,14 @@ export async function* runAgentLoop(
 ): AsyncGenerator<AgentEvent, AgentResult> {
   const runId = crypto.randomUUID();
   const trace = new TraceWriter(deps.config, runId);
+  const trajectory = new TrajectoryRecorder(deps.config, runId, input);
 
   const emit = function* (event: AgentEvent): Generator<AgentEvent> {
     trace.writeEvent(event);
+    trajectory.observe(event);
+    if (event.type === "done") {
+      trace.write({ type: "trajectory_written", path: trajectory.write() });
+    }
     yield event;
   };
 
@@ -89,6 +94,7 @@ export async function* runAgentLoop(
   deps.session.append(userMessage);
 
   const messages = deps.context.build(deps.session.getMessages(), input);
+  const toolDefinitions = deps.toolRunner.registry.exportDeepSeekTools();
   let finalText = "";
   let steps = 0;
 
@@ -97,7 +103,7 @@ export async function* runAgentLoop(
       trace.write({
         type: "model_request",
         messageCount: messages.length,
-        toolCount: tools.length,
+        toolCount: toolDefinitions.length,
         step: steps + 1,
       });
 
@@ -106,7 +112,7 @@ export async function* runAgentLoop(
       let finishReason: string | null | undefined;
       const toolCallDeltas = new Map<number, ToolCallAccumulator>();
 
-      for await (const event of deps.client.chatStream(messages, tools)) {
+      for await (const event of deps.client.chatStream(messages, toolDefinitions)) {
         switch (event.type) {
           case "content_delta":
             content += event.delta;
@@ -167,7 +173,7 @@ export async function* runAgentLoop(
           arguments: call.function.arguments,
         });
 
-        const stream = deps.toolRunner.runWithEvents(call, runId);
+        const stream = deps.toolRunner.runWithEvents(call, runId, trace.path());
         let next = await stream.next();
         while (!next.done) {
           trace.writeEvent(next.value);

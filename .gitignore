@@ -3,4 +3,8 @@ dist/
 .env
 data/*.json
 data/sessions/*.json
+data/traces/*.jsonl
+data/trajectories/*.json
+data/notes/*.md
+evals/reports/*.json
 *.log

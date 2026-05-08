@@ -1,10 +1,28 @@
 import type { AppConfig } from "../config.js";
 import type { MemoryStore } from "../memory.js";
+import type { SessionStore } from "../session.js";
 import type { Terminal } from "../terminal.js";
 import type { ToolCall } from "../types.js";
 import type { AgentEvent } from "../runtime/events.js";
+import type { ShellResult } from "../terminal/stream.js";
+import { ApprovalPolicy, type AskFn } from "../security/approval.js";
+import { redactValue } from "../security/secrets.js";
+import type { Workspace } from "../workspace/workspace.js";
+import type { NotesStore } from "../notes/notes.js";
+import { ensureToolPermission } from "./permissions.js";
+import { ToolRegistry } from "./registry.js";
+import type { ToolContext, ToolEvent, ToolResult, ToolRunResult } from "./tool.js";
 
-export type AskFn = (question: string) => Promise<string>;
+export type ToolRunnerDeps = {
+  config: AppConfig;
+  registry: ToolRegistry;
+  memory: MemoryStore;
+  terminal: Terminal;
+  workspace: Workspace;
+  ask: AskFn;
+  session?: SessionStore;
+  notes?: NotesStore;
+};
 
 function parseArgs(raw: string): Record<string, unknown> {
   if (!raw.trim()) return {};
@@ -15,46 +33,98 @@ function parseArgs(raw: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
-function stringArg(args: Record<string, unknown>, name: string, required = true): string | undefined {
-  const value = args[name];
-  if (value == null) {
-    if (required) throw new Error(`Missing required argument: ${name}`);
-    return undefined;
+function validateJsonSchema(schema: Record<string, unknown>, input: Record<string, unknown>): void {
+  const required = Array.isArray(schema.required) ? schema.required.map(String) : [];
+  for (const key of required) {
+    if (!(key in input)) throw new Error(`Missing required argument: ${key}`);
   }
-  if (typeof value !== "string") throw new Error(`Argument ${name} must be a string.`);
-  return value;
+
+  const properties = schema.properties && typeof schema.properties === "object"
+    ? schema.properties as Record<string, Record<string, unknown>>
+    : {};
+  const additionalProperties = schema.additionalProperties !== false;
+  if (!additionalProperties) {
+    for (const key of Object.keys(input)) {
+      if (!(key in properties)) throw new Error(`Unexpected argument: ${key}`);
+    }
+  }
+
+  for (const [key, value] of Object.entries(input)) {
+    const prop = properties[key];
+    if (!prop || value == null) continue;
+    const expected = prop.type;
+    if (expected === "array" && !Array.isArray(value)) throw new Error(`Argument ${key} must be an array.`);
+    if (expected === "number" && (typeof value !== "number" || !Number.isFinite(value))) {
+      throw new Error(`Argument ${key} must be a finite number.`);
+    }
+    if (expected === "string" && typeof value !== "string") throw new Error(`Argument ${key} must be a string.`);
+    if (expected === "boolean" && typeof value !== "boolean") throw new Error(`Argument ${key} must be a boolean.`);
+    if (expected === "object" && (typeof value !== "object" || Array.isArray(value))) {
+      throw new Error(`Argument ${key} must be an object.`);
+    }
+  }
 }
 
-function numberArg(args: Record<string, unknown>, name: string): number | undefined {
-  const value = args[name];
-  if (value == null) return undefined;
-  if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`Argument ${name} must be a finite number.`);
-  return value;
+function isAsyncGenerator(value: ToolRunResult): value is AsyncGenerator<ToolEvent, ToolResult> {
+  return Boolean(value && typeof (value as AsyncGenerator<ToolEvent, ToolResult>)[Symbol.asyncIterator] === "function");
 }
 
-function stringArrayArg(args: Record<string, unknown>, name: string): string[] {
-  const value = args[name];
-  if (value == null) return [];
-  if (!Array.isArray(value)) throw new Error(`Argument ${name} must be an array.`);
-  return value.map((v) => String(v));
+function resultToModelContent(result: ToolResult, config: AppConfig): string {
+  const safe = redactValue({
+    ok: result.ok,
+    content: result.content,
+    data: result.data,
+    error: result.error,
+    metadata: result.metadata,
+    truncated: result.truncated,
+  }, config);
+  return JSON.stringify(safe, null, 2);
 }
 
-async function confirmShell(ask: AskFn, command: string, cwd: string | undefined): Promise<boolean> {
-  const answer = await ask(`\nModel wants to run shell command${cwd ? ` in ${cwd}` : ""}:\n  ${command}\nApprove? [y/N] `);
-  return ["y", "yes"].includes(answer.trim().toLowerCase());
+function eventToAgentEvent(event: ToolEvent, runId: string, toolCallId: string): AgentEvent | undefined {
+  if (event.type === "stdout") return { type: "tool_stdout", runId, toolCallId, data: event.data };
+  if (event.type === "stderr") return { type: "tool_stderr", runId, toolCallId, data: event.data };
+  if (event.type === "error") return { type: "tool_stderr", runId, toolCallId, data: event.error };
+  if (event.type === "progress") return { type: "tool_progress", runId, toolCallId, message: event.message, data: event.data };
+  return undefined;
 }
 
-function jsonResult(value: unknown): string {
-  return JSON.stringify(value, null, 2);
+function maybeShellResult(value: unknown): ShellResult | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const candidate = value as Partial<ShellResult>;
+  return typeof candidate.command === "string" && typeof candidate.cwd === "string" && "exitCode" in candidate
+    ? candidate as ShellResult
+    : undefined;
 }
 
 export class ToolRunner {
-  constructor(
-    private readonly config: AppConfig,
-    private readonly memory: MemoryStore,
-    private readonly terminal: Terminal,
-    private readonly ask: AskFn,
-  ) {}
+  readonly registry: ToolRegistry;
+  private readonly approval: ApprovalPolicy;
+
+  constructor(private readonly deps: ToolRunnerDeps) {
+    this.registry = deps.registry;
+    this.approval = new ApprovalPolicy(deps.config, deps.ask);
+  }
+
+  get memory(): MemoryStore {
+    return this.deps.memory;
+  }
+
+  get terminal(): Terminal {
+    return this.deps.terminal;
+  }
+
+  get workspace(): Workspace {
+    return this.deps.workspace;
+  }
+
+  get session(): SessionStore | undefined {
+    return this.deps.session;
+  }
+
+  get notes(): NotesStore | undefined {
+    return this.deps.notes;
+  }
 
   async run(call: ToolCall): Promise<string> {
     const stream = this.runWithEvents(call, "compat");
@@ -65,159 +135,73 @@ export class ToolRunner {
     return next.value;
   }
 
-  async *runWithEvents(call: ToolCall, runId: string): AsyncGenerator<AgentEvent, string> {
-    let result = "";
+  async *runWithEvents(call: ToolCall, runId: string, tracePath?: string): AsyncGenerator<AgentEvent, string> {
+    const name = call.function.name;
+    let serialized = "";
 
     try {
-      const args = parseArgs(call.function.arguments);
+      const tool = this.registry.require(name);
+      const input = parseArgs(call.function.arguments);
+      validateJsonSchema(tool.inputSchema, input);
+      await ensureToolPermission(tool, input, this.approval);
 
-      switch (call.function.name) {
-        case "memory_add": {
-          const text = stringArg(args, "text", true)!;
-          const tags = stringArrayArg(args, "tags");
-          const entry = this.memory.add(text, tags, "assistant");
-          result = jsonResult({ ok: true, saved: entry });
-          yield {
-            type: "tool_call_end",
-            runId,
-            toolCallId: call.id,
-            name: call.function.name,
-            ok: true,
-            result,
-          };
-          return result;
-        }
+      const ctx: ToolContext = {
+        config: this.deps.config,
+        memory: this.deps.memory,
+        session: this.deps.session,
+        terminal: this.deps.terminal,
+        workspace: this.deps.workspace,
+        notes: this.deps.notes,
+        approval: this.approval,
+        runId,
+        tracePath,
+      };
 
-        case "memory_search": {
-          const query = stringArg(args, "query", true)!;
-          const limit = Math.min(Math.max(Math.floor(numberArg(args, "limit") ?? 8), 1), 20);
-          const results = this.memory.search(query, limit);
-          result = jsonResult({ ok: true, results });
-          yield {
-            type: "tool_call_end",
-            runId,
-            toolCallId: call.id,
-            name: call.function.name,
-            ok: true,
-            result,
-          };
-          return result;
-        }
+      const execution = tool.run(input, ctx);
+      let result: ToolResult;
 
-        case "shell_exec": {
-          const command = stringArg(args, "command", true)!;
-          const cwd = stringArg(args, "cwd", false);
-          const timeoutMs = numberArg(args, "timeoutMs");
-
-          this.terminal.assertAllowed(command);
-
-          if (this.config.approvalMode !== "never") {
-            const approved = await confirmShell(this.ask, command, cwd);
-            if (!approved) {
-              result = jsonResult({ ok: false, declined: true, message: "User declined shell command." });
-              yield {
-                type: "tool_call_end",
-                runId,
-                toolCallId: call.id,
-                name: call.function.name,
-                ok: false,
-                result,
-              };
-              return result;
-            }
+      if (isAsyncGenerator(execution)) {
+        let next = await execution.next();
+        let resultEvent: ToolResult | undefined;
+        while (!next.done) {
+          if (next.value.type === "result") {
+            resultEvent = next.value.result;
           }
-
-          const shell = this.terminal.runStream(command, cwd, timeoutMs);
-          let next = await shell.next();
-          while (!next.done) {
-            const event = next.value;
-            if (event.type === "stdout") {
-              yield { type: "tool_stdout", runId, toolCallId: call.id, data: event.data };
-            } else if (event.type === "stderr") {
-              yield { type: "tool_stderr", runId, toolCallId: call.id, data: event.data };
-            } else if (event.type === "error") {
-              yield { type: "tool_stderr", runId, toolCallId: call.id, data: event.error };
-            } else if (event.type === "exit") {
-              const ok = event.result.exitCode === 0 && !event.result.timedOut;
-              result = jsonResult({ ok, result: event.result });
-              yield {
-                type: "tool_call_end",
-                runId,
-                toolCallId: call.id,
-                name: call.function.name,
-                ok,
-                result,
-                shellResult: event.result,
-              };
-            }
-            next = await shell.next();
-          }
-
-          if (!result) {
-            const shellResult = next.value;
-            const ok = shellResult.exitCode === 0 && !shellResult.timedOut;
-            result = jsonResult({ ok, result: shellResult });
-            yield {
-              type: "tool_call_end",
-              runId,
-              toolCallId: call.id,
-              name: call.function.name,
-              ok,
-              result,
-              shellResult,
-            };
-          }
-
-          return result;
+          const agentEvent = eventToAgentEvent(next.value, runId, call.id);
+          if (agentEvent) yield agentEvent;
+          next = await execution.next();
         }
-
-        case "get_session_info": {
-          result = jsonResult({
-            ok: true,
-            now: new Date().toISOString(),
-            workspace: this.config.workspace,
-            model: this.config.model,
-            thinking: this.config.thinking,
-            approvalMode: this.config.approvalMode,
-            memoryCount: this.memory.count(),
-          });
-          yield {
-            type: "tool_call_end",
-            runId,
-            toolCallId: call.id,
-            name: call.function.name,
-            ok: true,
-            result,
-          };
-          return result;
-        }
-
-        default:
-          result = jsonResult({ ok: false, error: `Unknown tool: ${call.function.name}` });
-          yield {
-            type: "tool_call_end",
-            runId,
-            toolCallId: call.id,
-            name: call.function.name,
-            ok: false,
-            result,
-          };
-          return result;
+        result = resultEvent ?? next.value;
+      } else {
+        result = await execution;
       }
-    } catch (error) {
-      result = jsonResult({
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
+
+      serialized = resultToModelContent(result, this.deps.config);
       yield {
         type: "tool_call_end",
         runId,
         toolCallId: call.id,
-        name: call.function.name,
-        ok: false,
-        result,
+        name,
+        ok: result.ok,
+        result: serialized,
+        shellResult: maybeShellResult(result.data),
       };
-      return result;
+      return serialized;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const result: ToolResult = { ok: false, content: message, error: message };
+      serialized = resultToModelContent(result, this.deps.config);
+      yield {
+        type: "tool_call_end",
+        runId,
+        toolCallId: call.id,
+        name,
+        ok: false,
+        result: serialized,
+      };
+      return serialized;
     }
   }
 }
+
+export type { AskFn };

@@ -42,6 +42,11 @@ export class AgentRenderer {
         process.stderr.write(event.data);
         break;
 
+      case "tool_progress":
+        this.closeOpenLines();
+        console.log(`[tool] ${event.message}`);
+        break;
+
       case "tool_call_end":
         this.closeOpenLines();
         console.log(`[tool] ${event.name} ${event.ok ? "ok" : "failed"}`);
