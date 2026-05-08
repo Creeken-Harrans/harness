@@ -6,7 +6,9 @@
 
 - 模型请求 shell command 时默认要求用户批准。
 - 部分明显危险命令被硬拦截。
-- shell 输出会截断，避免把超大日志塞回模型。
+- shell stdout/stderr 会实时流给 CLI。
+- 写回模型的 shell observation 是结构化 JSON，stdout/stderr 捕获有长度上限。
+- 每轮运行写 `data/traces/<run-id>.jsonl`，并对 API key / token / secret 做基础 redaction。
 - context manager 不会把旧 tool messages 跨轮乱塞给模型。
 - `.env` 被 `.gitignore` 忽略，避免 API key 入库。
 
@@ -18,6 +20,7 @@
 - 没有命令级 syscall 隔离。
 - 没有权限降级用户。
 - 没有完整 prompt-injection 防护。
+- 当前 trace redaction 是基础保护，不等价于完整 DLP。
 
 ## 3. 建议实践
 
@@ -46,3 +49,4 @@ HARNESS_APPROVAL_MODE=never
 4. Diff approval：写文件前展示 diff。
 5. Tool audit log：记录所有 tool calls。
 6. Secrets redaction：返回模型前屏蔽 API key、token、私钥。
+7. Workspace path policy：文件/Git/Patch 工具默认限制在 workspace 内。

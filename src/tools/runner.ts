@@ -2,6 +2,7 @@ import type { AppConfig } from "../config.js";
 import type { MemoryStore } from "../memory.js";
 import type { Terminal } from "../terminal.js";
 import type { ToolCall } from "../types.js";
+import type { AgentEvent } from "../runtime/events.js";
 
 export type AskFn = (question: string) => Promise<string>;
 
@@ -43,6 +44,10 @@ async function confirmShell(ask: AskFn, command: string, cwd: string | undefined
   return ["y", "yes"].includes(answer.trim().toLowerCase());
 }
 
+function jsonResult(value: unknown): string {
+  return JSON.stringify(value, null, 2);
+}
+
 export class ToolRunner {
   constructor(
     private readonly config: AppConfig,
@@ -52,6 +57,17 @@ export class ToolRunner {
   ) {}
 
   async run(call: ToolCall): Promise<string> {
+    const stream = this.runWithEvents(call, "compat");
+    let next = await stream.next();
+    while (!next.done) {
+      next = await stream.next();
+    }
+    return next.value;
+  }
+
+  async *runWithEvents(call: ToolCall, runId: string): AsyncGenerator<AgentEvent, string> {
+    let result = "";
+
     try {
       const args = parseArgs(call.function.arguments);
 
@@ -60,14 +76,32 @@ export class ToolRunner {
           const text = stringArg(args, "text", true)!;
           const tags = stringArrayArg(args, "tags");
           const entry = this.memory.add(text, tags, "assistant");
-          return JSON.stringify({ ok: true, saved: entry }, null, 2);
+          result = jsonResult({ ok: true, saved: entry });
+          yield {
+            type: "tool_call_end",
+            runId,
+            toolCallId: call.id,
+            name: call.function.name,
+            ok: true,
+            result,
+          };
+          return result;
         }
 
         case "memory_search": {
           const query = stringArg(args, "query", true)!;
           const limit = Math.min(Math.max(Math.floor(numberArg(args, "limit") ?? 8), 1), 20);
           const results = this.memory.search(query, limit);
-          return JSON.stringify({ ok: true, results }, null, 2);
+          result = jsonResult({ ok: true, results });
+          yield {
+            type: "tool_call_end",
+            runId,
+            toolCallId: call.id,
+            name: call.function.name,
+            ok: true,
+            result,
+          };
+          return result;
         }
 
         case "shell_exec": {
@@ -80,42 +114,110 @@ export class ToolRunner {
           if (this.config.approvalMode !== "never") {
             const approved = await confirmShell(this.ask, command, cwd);
             if (!approved) {
-              return JSON.stringify({ ok: false, declined: true, message: "User declined shell command." }, null, 2);
+              result = jsonResult({ ok: false, declined: true, message: "User declined shell command." });
+              yield {
+                type: "tool_call_end",
+                runId,
+                toolCallId: call.id,
+                name: call.function.name,
+                ok: false,
+                result,
+              };
+              return result;
             }
           }
 
-          const result = await this.terminal.run(command, cwd, timeoutMs);
-          return JSON.stringify({ ok: result.exitCode === 0 && !result.timedOut, result }, null, 2);
+          const shell = this.terminal.runStream(command, cwd, timeoutMs);
+          let next = await shell.next();
+          while (!next.done) {
+            const event = next.value;
+            if (event.type === "stdout") {
+              yield { type: "tool_stdout", runId, toolCallId: call.id, data: event.data };
+            } else if (event.type === "stderr") {
+              yield { type: "tool_stderr", runId, toolCallId: call.id, data: event.data };
+            } else if (event.type === "error") {
+              yield { type: "tool_stderr", runId, toolCallId: call.id, data: event.error };
+            } else if (event.type === "exit") {
+              const ok = event.result.exitCode === 0 && !event.result.timedOut;
+              result = jsonResult({ ok, result: event.result });
+              yield {
+                type: "tool_call_end",
+                runId,
+                toolCallId: call.id,
+                name: call.function.name,
+                ok,
+                result,
+                shellResult: event.result,
+              };
+            }
+            next = await shell.next();
+          }
+
+          if (!result) {
+            const shellResult = next.value;
+            const ok = shellResult.exitCode === 0 && !shellResult.timedOut;
+            result = jsonResult({ ok, result: shellResult });
+            yield {
+              type: "tool_call_end",
+              runId,
+              toolCallId: call.id,
+              name: call.function.name,
+              ok,
+              result,
+              shellResult,
+            };
+          }
+
+          return result;
         }
 
         case "get_session_info": {
-          return JSON.stringify(
-            {
-              ok: true,
-              now: new Date().toISOString(),
-              workspace: this.config.workspace,
-              model: this.config.model,
-              thinking: this.config.thinking,
-              approvalMode: this.config.approvalMode,
-              memoryCount: this.memory.count(),
-            },
-            null,
-            2,
-          );
+          result = jsonResult({
+            ok: true,
+            now: new Date().toISOString(),
+            workspace: this.config.workspace,
+            model: this.config.model,
+            thinking: this.config.thinking,
+            approvalMode: this.config.approvalMode,
+            memoryCount: this.memory.count(),
+          });
+          yield {
+            type: "tool_call_end",
+            runId,
+            toolCallId: call.id,
+            name: call.function.name,
+            ok: true,
+            result,
+          };
+          return result;
         }
 
         default:
-          return JSON.stringify({ ok: false, error: `Unknown tool: ${call.function.name}` }, null, 2);
+          result = jsonResult({ ok: false, error: `Unknown tool: ${call.function.name}` });
+          yield {
+            type: "tool_call_end",
+            runId,
+            toolCallId: call.id,
+            name: call.function.name,
+            ok: false,
+            result,
+          };
+          return result;
       }
     } catch (error) {
-      return JSON.stringify(
-        {
-          ok: false,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        null,
-        2,
-      );
+      result = jsonResult({
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      yield {
+        type: "tool_call_end",
+        runId,
+        toolCallId: call.id,
+        name: call.function.name,
+        ok: false,
+        result,
+      };
+      return result;
     }
   }
 }

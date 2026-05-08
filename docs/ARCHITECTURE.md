@@ -1,111 +1,76 @@
 # Architecture
 
-这个项目是一个 mini agent harness。它不是模型本身，而是围绕模型做：
+这个仓库正在从 DeepSeek Mini Harness 迁移为 TypeScript-first Agent Harness Runtime。核心定位保持不变：
 
-- 输入输出管理
-- memory 注入
-- session 持久化
-- tool schema 暴露
-- tool call 执行
-- terminal approval
-- context trimming
+- DeepSeek 是唯一主模型 API 层。
+- API message/tool schema 保持 OpenAI-compatible，因为 DeepSeek 本身兼容这类格式。
+- 不引入重型 ModelProvider 抽象。
+- Python/Rust 只作为未来辅助 worker，不是第一阶段主 runtime。
 
-## 1. Harness 是什么
+## Current Phase
 
-可以把 harness 理解成：
+Phase 1 已落地 streaming runtime foundation：
 
-> 大语言模型 LLM 的本地运行外壳。它不只是调用 API，而是决定模型看见什么、能做什么、怎么记忆、怎么调用工具、怎么把行动结果反馈给模型。
+- `src/deepseek/client.ts`：DeepSeek `chatOnce` / `chatStream`。
+- `src/deepseek/stream.ts`：SSE parser，解析 `content`、`reasoning_content`、`tool_calls` delta。
+- `src/runtime/events.ts`：统一 `AgentEvent`。
+- `src/runtime/loop.ts`：模型 -> 工具 -> 模型的事件驱动 loop。
+- `src/terminal/stream.ts`：Node `spawn` stdout/stderr 实时 streaming。
+- `src/runtime/trace.ts`：`data/traces/<run-id>.jsonl` trace。
+- `src/cli/renderer.ts`：实时渲染 LLM delta 和 terminal output。
 
-核心 loop：
+旧顶层文件如 `src/deepseek.ts`、`src/runtime.ts`、`src/terminal.ts` 保留为 compatibility re-export，避免一次性破坏现有 import。
+
+## Harness Loop
 
 ```text
 user input
   ↓
 ContextManager builds messages
   ↓
-DeepSeek chat completion
+DeepSeekClient.chatStream
   ↓
-assistant final answer? ── yes → print
+AgentEvent: llm_delta / llm_reasoning_delta / tool_call_delta
+  ↓
+assistant final? ── yes → AgentEvent(done)
   ↓ no
-assistant tool_calls
+ToolRunner executes tool
   ↓
-ToolRunner executes tools
+AgentEvent: tool_stdout / tool_stderr / tool_call_end
   ↓
-tool results appended
+tool result appended as tool message
   ↓
-DeepSeek chat completion again
+DeepSeekClient.chatStream again
 ```
 
-这就是 `src/runtime.ts`。
+Terminal stdout/stderr is streamed live to the CLI. The observation written back to the model is a structured JSON result with bounded stdout/stderr capture.
 
-## 2. 和 OpenClaw/Hermes 的对应关系
+## hello-agents Mapping
 
-| 大型 agent 概念 | 本项目里的极简对应 |
+| hello-agents idea | This harness boundary |
 |---|---|
-| Gateway / control plane | `main.ts` + `runtime.ts` |
-| Session lifecycle | `session.ts` |
-| Persistent memory | `memory.ts` |
-| Context files / SOUL | `SOUL.md` + `context.ts` |
-| Tools | `tools/schema.ts` |
-| Tool executor | `tools/runner.ts` |
-| Terminal backend | `terminal.ts` |
-| Approval / safety | `HARNESS_APPROVAL_MODE` + hard deny regex |
-| Context optimization | `context.ts` approximate token budget |
+| 自研 Agent Runtime | `src/runtime/*` |
+| ReAct loop | current model/tool/model loop, later `src/agents/react-agent.ts` |
+| Plan-and-Solve | future `src/agents/plan-execute-agent.ts` |
+| Reflection | future `src/agents/reflection-agent.ts` |
+| Context Engineering | current `src/context.ts`, future `src/context/*` |
+| Memory / RAG | current JSON `src/memory.ts`, future `src/memory/*` and `python/rag` |
+| MCP tools | future `src/mcp/*` adapter into ToolRegistry |
+| A2A / multi-agent | future `src/a2a/*` local bus |
+| Agentic RL trajectories | future `src/trajectories/*` export |
+| Evaluation harness | future `src/eval/*` |
 
-## 3. 为什么不直接把所有历史都塞给模型
+## Migration Policy
 
-因为真实 agent 会遇到 context window 限制。简单粗暴把所有历史放进去会导致：
+当前代码保留能跑的旧模块，逐步拆分：
 
-1. 成本上升。
-2. 延迟变长。
-3. 超过上下文长度。
-4. 旧信息干扰当前任务。
-5. 旧 tool messages 跨轮使用可能违反 API message structure。
+- 保留：`context.ts`、`memory.ts`、`session.ts`、`tools/schema.ts`。
+- 已迁移并保留兼容层：`config.ts`、`deepseek.ts`、`runtime.ts`、`terminal.ts`、`commands.ts`。
+- 下一阶段拆分：`tools/runner.ts` 到 ToolRegistry，随后 workspace-aware file/git/patch tools。
 
-所以本项目采用：
+## Limits
 
-- 长期事实进入 `memory.json`
-- 短期对话进入 `sessions/<id>.json`
-- 每轮只取相关 memory + 最近 user/assistant 文本
-
-## 4. 为什么 tool calls 要经过 ToolRunner
-
-模型不能直接执行代码。模型只能输出结构化意图：
-
-```json
-{
-  "name": "shell_exec",
-  "arguments": "{\"command\":\"ls -la\"}"
-}
-```
-
-真正执行的是本地程序 `ToolRunner`。这就是安全边界：
-
-- 模型提出动作
-- harness 检查动作
-- 用户批准动作
-- harness 执行动作
-- harness 把结果返回模型
-
-## 5. 为什么默认禁用 thinking
-
-DeepSeek thinking mode 会返回 `reasoning_content`。当 thinking mode 与 tool calls 一起使用时，API 文档要求在后续工具轮中保留 reasoning content。这个项目在当前工具轮里会保留 raw assistant message，因此可以工作；但作为教学项目，默认禁用 thinking 更稳定。
-
-如果你想打开：
-
-```bash
-DEEPSEEK_THINKING=enabled
-DEEPSEEK_REASONING_EFFORT=high
-```
-
-## 6. 最小实现的局限
-
-- memory 是 JSON，不适合大量数据。
-- search 是关键词，不是 embedding。
-- terminal 只是 regex 拦截，不是强 sandbox。
-- 没有文件 patch 工具。
-- 没有多 agent。
-- 没有 messaging gateway。
-- 没有 scheduled automation。
-
-但它已经包含 agent harness 最核心的骨架。
+- 当前 shell safety 仍是 approval + hard deny regex，不是强 sandbox。
+- 当前 tool runner 仍有硬编码 switch，Phase 2 会迁移到 registry。
+- 当前 context builder 仍是旧 `ContextManager`，Phase 4 会拆成 Gather / Select / Structure / Compress。
+- 当前 trace 不记录 API key，并做基础 redaction；后续会加入审计日志和 trajectory export。
