@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from hello_agents import HelloAgentsLLM, ToolRegistry
 from my_react_agent import MyReActAgent
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 
 def test_react_agent():

@@ -3,7 +3,7 @@
 展示如何基于框架基类 SimpleAgent 构建自定义Agent，支持工具调用。
 """
 from typing import Optional, Iterator
-from hello_agents import SimpleAgent, HelloAgentsLLM, Config, Message
+from hello_agents import SimpleAgent, HelloAgentsLLM, Config, Message, ToolRegistry
 import re
 
 
@@ -101,7 +101,7 @@ class MySimpleAgent(SimpleAgent):
                 clean_response = response
 
                 for call in tool_calls:
-                    result = self._execute_tool_call(call['tool_name'], call['parameters'])
+                    result = self._execute_tool_call_by_string(call['tool_name'], call['parameters'])
                     tool_results.append(result)
                     # 从响应中移除工具调用标记
                     clean_response = clean_response.replace(call['original'], "")
@@ -146,8 +146,8 @@ class MySimpleAgent(SimpleAgent):
 
         return tool_calls
 
-    def _execute_tool_call(self, tool_name: str, parameters: str) -> str:
-        """执行工具调用"""
+    def _execute_tool_call_by_string(self, tool_name: str, parameters: str) -> str:
+        """执行工具调用（字符串参数版本）"""
         if not self.tool_registry:
             return f"❌ 错误：未配置工具注册表"
 
@@ -224,14 +224,14 @@ class MySimpleAgent(SimpleAgent):
         self.add_message(Message(full_response, "assistant"))
         print(f"✅ {self.name} 流式响应完成")
 
-    def add_tool(self, tool) -> None:
+    def add_tool(self, tool, auto_expand: bool = True) -> None:
         """添加工具到Agent（便利方法）"""
         if not self.tool_registry:
             from hello_agents import ToolRegistry
             self.tool_registry = ToolRegistry()
             self.enable_tool_calling = True
 
-        self.tool_registry.register_tool(tool)
+        self.tool_registry.register_tool(tool, auto_expand=auto_expand)
         print(f"🔧 工具 '{tool.name}' 已添加")
 
     def has_tools(self) -> bool:

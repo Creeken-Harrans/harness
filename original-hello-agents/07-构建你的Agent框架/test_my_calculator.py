@@ -4,7 +4,7 @@
 from dotenv import load_dotenv
 from my_calculator_tool import create_calculator_registry
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 
 def test_calculator_tool():

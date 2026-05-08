@@ -7,7 +7,7 @@ from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.tools import A2ATool
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 llm = HelloAgentsLLM()
 
 # 假设已经有一个研究员Agent服务运行在 http://localhost:5000

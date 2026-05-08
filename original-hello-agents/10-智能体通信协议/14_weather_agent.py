@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.tools import MCPTool
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 
 def create_weather_assistant():

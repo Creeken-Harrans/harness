@@ -6,7 +6,7 @@
 """
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 import os
 import time
 import hashlib

@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 from hello_agents.tools import MemoryTool
 from hello_agents.memory import MemoryItem
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 class WorkingMemoryDemo:
     """工作记忆演示类"""

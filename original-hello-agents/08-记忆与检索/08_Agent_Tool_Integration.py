@@ -6,7 +6,7 @@
 """
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 import time
 from hello_agents import SimpleAgent, HelloAgentsLLM, ToolRegistry
 from hello_agents.tools import MemoryTool, RAGTool

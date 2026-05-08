@@ -6,10 +6,11 @@ import re
 import os
 import requests
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from dotenv import load_dotenv
 
 # 加载环境变量
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 AGENT_SYSTEM_PROMPT = """
 你是一个智能旅行助手。你的任务是分析用户的请求，并使用可用工具一步步地解决问题。
@@ -113,7 +114,7 @@ class OpenAICompatibleClient:
         """调用LLM API来生成回应。"""
         print("正在调用大语言模型...")
         try:
-            messages = [
+            messages: list[ChatCompletionMessageParam] = [
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': prompt}
             ]
@@ -124,7 +125,7 @@ class OpenAICompatibleClient:
             )
             answer = response.choices[0].message.content
             print("大语言模型响应成功。")
-            return answer
+            return answer or ""
         except Exception as e:
             print(f"调用LLM API时发生错误: {e}")
             return "错误：调用语言模型服务时出错。"
@@ -178,12 +179,20 @@ if __name__ == "__main__":
         action_str = action_match.group(1).strip()
 
         if action_str.startswith("Finish"):
-            final_answer = re.match(r"Finish\[(.*)\]", action_str).group(1)
+            finish_match = re.match(r"Finish\[(.*)\]", action_str)
+            final_answer = finish_match.group(1) if finish_match else action_str
             print(f"任务完成，最终答案: {final_answer}")
             break
 
-        tool_name = re.search(r"(\w+)\(", action_str).group(1)
-        args_str = re.search(r"\((.*)\)", action_str).group(1)
+        tool_match = re.search(r"(\w+)\(", action_str)
+        args_match = re.search(r"\((.*)\)", action_str)
+        if not tool_match or not args_match:
+            observation_str = f"Observation: 错误：无法解析工具调用 '{action_str}'"
+            print(f"{observation_str}\n" + "=" * 40)
+            prompt_history.append(observation_str)
+            continue
+        tool_name = tool_match.group(1)
+        args_str = args_match.group(1)
         kwargs = dict(re.findall(r'(\w+)="([^"]*)"', args_str))
 
         if tool_name in available_tools:

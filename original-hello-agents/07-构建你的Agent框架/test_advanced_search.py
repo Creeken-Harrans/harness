@@ -4,7 +4,7 @@
 from dotenv import load_dotenv
 from my_advanced_search import create_advanced_search_registry, MyAdvancedSearchTool
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 
 def test_advanced_search():

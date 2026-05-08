@@ -64,13 +64,13 @@ class MyReflectionAgent(ReflectionAgent):
 
         print(f"✅ {name} 初始化完成，最大迭代次数: {max_iterations}")
 
-    def run(self, task: str, **kwargs) -> str:
+    def run(self, input_text: str, **kwargs) -> str:
         """运行反思迭代流程"""
-        print(f"\n🤖 {self.name} 开始处理任务: {task}")
+        print(f"\n🤖 {self.name} 开始处理任务: {input_text}")
 
         # 1. 初始生成
         print("\n--- 初始生成 ---")
-        initial_prompt = self.initial_prompt.format(task=task)
+        initial_prompt = self.initial_prompt.format(task=input_text)
         current_content = self._call_llm(initial_prompt)
         print(f"初始内容已生成")
 
@@ -78,7 +78,7 @@ class MyReflectionAgent(ReflectionAgent):
         for i in range(self.max_iterations):
             print(f"\n--- 第 {i+1}/{self.max_iterations} 轮反思 ---")
 
-            reflect_prompt = self.reflect_prompt.format(task=task, content=current_content)
+            reflect_prompt = self.reflect_prompt.format(task=input_text, content=current_content)
             feedback = self._call_llm(reflect_prompt)
             print(f"反馈: {feedback[:200]}...")
 
@@ -86,7 +86,7 @@ class MyReflectionAgent(ReflectionAgent):
                 print("\n✅ 内容已无需改进，流程终止。")
                 break
 
-            refine_prompt = self.refine_prompt.format(task=task, feedback=feedback)
+            refine_prompt = self.refine_prompt.format(task=input_text, feedback=feedback)
             current_content = self._call_llm(refine_prompt)
             print(f"优化后的内容已生成")
 

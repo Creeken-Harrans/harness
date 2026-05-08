@@ -6,7 +6,7 @@ from hello_agents import HelloAgentsLLM, ToolRegistry
 from hello_agents.tools import CalculatorTool
 from my_simple_agent import MySimpleAgent
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 # 创建LLM实例
 llm = HelloAgentsLLM()

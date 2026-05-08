@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from my_llm import MyLLM
 
 # 加载环境变量
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 # 实例化我们重写的客户端，并指定provider
 llm = MyLLM(provider="modelscope")

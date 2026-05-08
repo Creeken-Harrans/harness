@@ -4,9 +4,9 @@
 """
 import os
 from dotenv import load_dotenv
-from typing import Dict, Any
+from typing import Any, Callable, cast
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 
 def search(query: str) -> str:
@@ -59,9 +59,9 @@ class ToolExecutor:
     """
 
     def __init__(self):
-        self.tools: Dict[str, Dict[str, Any]] = {}
+        self.tools: dict[str, dict[str, Any]] = {}
 
-    def registerTool(self, name: str, description: str, func: callable):
+    def registerTool(self, name: str, description: str, func: Callable[[str], str]) -> None:
         """
         向工具箱中注册一个新工具。
         """
@@ -71,11 +71,12 @@ class ToolExecutor:
         self.tools[name] = {"description": description, "func": func}
         print(f"工具 '{name}' 已注册。")
 
-    def getTool(self, name: str) -> callable:
+    def getTool(self, name: str) -> Callable[[str], str] | None:
         """
         根据名称获取一个工具的执行函数。
         """
-        return self.tools.get(name, {}).get("func")
+        func = self.tools.get(name, {}).get("func")
+        return cast(Callable[[str], str], func) if callable(func) else None
 
     def getAvailableTools(self) -> str:
         """

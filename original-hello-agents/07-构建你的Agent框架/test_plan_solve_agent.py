@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from hello_agents.core.llm import HelloAgentsLLM
 from my_plan_solve_agent import MyPlanAndSolveAgent
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 llm = HelloAgentsLLM()
 

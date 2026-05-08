@@ -10,7 +10,7 @@ import time
 import tempfile
 from hello_agents.tools import RAGTool
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 class MarkItDownPipelineDemo:
     """MarkItDown处理管道演示类"""

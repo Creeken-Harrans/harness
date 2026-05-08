@@ -6,7 +6,7 @@
 """
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 from datetime import datetime
 from typing import List
 from hello_agents.tools import MemoryTool

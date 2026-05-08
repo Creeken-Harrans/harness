@@ -4,7 +4,7 @@ from hello_agents.tools.builtin import ANPTool
 import random
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 llm = HelloAgentsLLM()
 
 # 1. 创建服务发现中心

@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from tavily import TavilyClient
 
 # 加载环境变量
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 # 定义状态结构
 class SearchState(TypedDict):

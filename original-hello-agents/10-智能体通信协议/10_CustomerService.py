@@ -10,7 +10,7 @@ import threading
 import time
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 llm = HelloAgentsLLM()
 
 # 1. 创建技术专家Agent服务

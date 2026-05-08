@@ -1,10 +1,35 @@
+# === Dependencies ===
 node_modules/
+
+# === Build output ===
 dist/
+
+# === Secrets & environment ===
 .env
+!.env.example
+
+# === Python bytecode ===
+__pycache__/
+*.pyc
+*.pyo
+
+# === Runtime data ===
 data/*.json
 data/sessions/*.json
 data/traces/*.jsonl
 data/trajectories/*.json
 data/notes/*.md
+data/todos/
+data/devlogs/
 evals/reports/*.json
+
+# === Logs ===
 *.log
+
+# === IDE / editor ===
+.vscode/
+
+# === Upstream reference (not part of this project) ===
+hello-agents/
+crates/
+original-hello-agents/.upstream-hello-agents

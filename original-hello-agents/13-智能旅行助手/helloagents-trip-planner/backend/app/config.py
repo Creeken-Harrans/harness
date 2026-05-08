@@ -1,19 +1,12 @@
 """配置管理模块"""
 
 import os
-from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
 # 加载环境变量
-# 首先尝试加载当前目录的.env
-load_dotenv()
-
-# 然后尝试加载HelloAgents的.env(如果存在)
-helloagents_env = Path(__file__).parent.parent.parent.parent / "HelloAgents" / ".env"
-if helloagents_env.exists():
-    load_dotenv(helloagents_env, override=False)  # 不覆盖已有的环境变量
+load_dotenv("/home/Creeken/Paper/harness/.env")
 
 
 class Settings(BaseSettings):
@@ -47,7 +40,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     class Config:
-        env_file = ".env"
+        env_file = "/home/Creeken/Paper/harness/.env"
         case_sensitive = False
         extra = "ignore"  # 忽略额外的环境变量
 
@@ -108,4 +101,3 @@ def print_config():
     print(f"LLM Base URL: {llm_base_url}")
     print(f"LLM Model: {llm_model}")
     print(f"日志级别: {settings.log_level}")
-

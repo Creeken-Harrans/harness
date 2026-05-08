@@ -8,7 +8,7 @@ ContextBuilder 基础使用示例
 4. 构建结构化上下文
 """
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 from hello_agents.context import ContextBuilder, ContextConfig
 from hello_agents.tools import MemoryTool, RAGTool
 from hello_agents.core.message import Message

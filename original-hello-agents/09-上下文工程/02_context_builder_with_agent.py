@@ -7,7 +7,7 @@ ContextBuilder 与 Agent 集成示例
 3. 记忆管理与上下文构建的协同
 """
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 from hello_agents import SimpleAgent, HelloAgentsLLM, ToolRegistry
 from hello_agents.context import ContextBuilder, ContextConfig
 from hello_agents.tools import MemoryTool, RAGTool
@@ -35,12 +35,12 @@ class ContextAwareAgent(SimpleAgent):
 
         self.conversation_history = []
 
-    def run(self, user_input: str) -> str:
+    def run(self, input_text: str, **kwargs) -> str:
         """运行 Agent,自动构建优化的上下文"""
 
         # 1. 使用 ContextBuilder 构建优化的上下文
         optimized_context = self.context_builder.build(
-            user_query=user_input,
+            user_query=input_text,
             conversation_history=self.conversation_history,
             system_instructions=self.system_prompt
         )
@@ -48,13 +48,13 @@ class ContextAwareAgent(SimpleAgent):
         # 2. 使用优化后的上下文调用 LLM
         messages = [
             {"role": "system", "content": optimized_context},
-            {"role": "user", "content": user_input}
+            {"role": "user", "content": input_text}
         ]
         response = self.llm.invoke(messages)
 
         # 3. 更新对话历史
         self.conversation_history.append(
-            Message(content=user_input, role="user", timestamp=datetime.now())
+            Message(content=input_text, role="user", timestamp=datetime.now())
         )
         self.conversation_history.append(
             Message(content=response, role="assistant", timestamp=datetime.now())
@@ -63,7 +63,7 @@ class ContextAwareAgent(SimpleAgent):
         # 4. 将重要交互记录到记忆系统
         # self.memory_tool.run({
         #     "action": "add",
-        #     "content": f"Q: {user_input}\nA: {response[:200]}...",  # 摘要
+        #     "content": f"Q: {input_text}\nA: {response[:200]}...",  # 摘要
         #     "memory_type": "episodic",
         #     "importance": 0.6
         # })

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from hello_agents import HelloAgentsLLM
 from my_reflection_agent import MyReflectionAgent
 
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 llm = HelloAgentsLLM()
 
 # 使用默认通用提示词

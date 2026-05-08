@@ -7,7 +7,7 @@ NoteTool 与 ContextBuilder 集成示例
 3. 基于历史笔记的连贯建议
 """
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.context import ContextBuilder, ContextConfig, ContextPacket
 from hello_agents.tools import MemoryTool, RAGTool, NoteTool
@@ -42,18 +42,18 @@ class ProjectAssistant(SimpleAgent):
 
         self.conversation_history = []
 
-    def run(self, user_input: str, note_as_action: bool = False) -> str:
+    def run(self, input_text: str, note_as_action: bool = False, **kwargs) -> str:
         """运行助手,自动集成笔记"""
 
         # 1. 从 NoteTool 检索相关笔记
-        relevant_notes = self._retrieve_relevant_notes(user_input)
+        relevant_notes = self._retrieve_relevant_notes(input_text)
 
         # 2. 将笔记转换为 ContextPacket
         note_packets = self._notes_to_packets(relevant_notes)
 
         # 3. 构建优化的上下文
         optimized_context = self.context_builder.build(
-            user_query=user_input,
+            user_query=input_text,
             conversation_history=self.conversation_history,
             system_instructions=self._build_system_instructions(),
             additional_packets=note_packets
@@ -62,16 +62,16 @@ class ProjectAssistant(SimpleAgent):
         # 4. 调用 LLM (以 messages 数组形式传入)
         messages = [
             {"role": "system", "content": optimized_context},
-            {"role": "user", "content": user_input}
+            {"role": "user", "content": input_text}
         ]
         response = self.llm.invoke(messages)
 
         # 5. 如果需要,将交互记录为笔记
         if note_as_action:
-            self._save_as_note(user_input, response)
+            self._save_as_note(input_text, response)
 
         # 6. 更新对话历史
-        self._update_history(user_input, response)
+        self._update_history(input_text, response)
 
         return response
 
@@ -185,21 +185,21 @@ class ProjectAssistant(SimpleAgent):
 
         return packets
 
-    def _save_as_note(self, user_input: str, response: str):
+    def _save_as_note(self, input_text: str, response: str):
         """将交互保存为笔记"""
         try:
             # 判断应该保存为什么类型的笔记
-            if "问题" in user_input or "阻塞" in user_input:
+            if "问题" in input_text or "阻塞" in input_text:
                 note_type = "blocker"
-            elif "计划" in user_input or "下一步" in user_input:
+            elif "计划" in input_text or "下一步" in input_text:
                 note_type = "action"
             else:
                 note_type = "conclusion"
 
             self.note_tool.run({
                 "action": "create",
-                "title": f"{user_input[:30]}...",
-                "content": f"## 问题\n{user_input}\n\n## 分析\n{response}",
+                "title": f"{input_text[:30]}...",
+                "content": f"## 问题\n{input_text}\n\n## 分析\n{response}",
                 "note_type": note_type,
                 "tags": [self.project_name, "auto_generated"]
             })
@@ -222,10 +222,10 @@ class ProjectAssistant(SimpleAgent):
 - 在建议中说明依据来源(笔记、记忆或知识库)
 - 保持对项目整体进度的认识"""
 
-    def _update_history(self, user_input: str, response: str):
+    def _update_history(self, input_text: str, response: str):
         """更新对话历史"""
         self.conversation_history.append(
-            Message(content=user_input, role="user", timestamp=datetime.now())
+            Message(content=input_text, role="user", timestamp=datetime.now())
         )
         self.conversation_history.append(
             Message(content=response, role="assistant", timestamp=datetime.now())

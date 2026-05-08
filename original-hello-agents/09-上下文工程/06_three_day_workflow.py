@@ -15,7 +15,7 @@ import os
 os.environ['EMBED_MODEL_TYPE'] = 'tfidf'
 os.environ['EMBED_MODEL_NAME'] = ''  # 重要：必须清空，否则会传递不兼容的参数
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv("/home/Creeken/Paper/harness/.env")
 # 方案二：本地Transformer（需要: pip install sentence-transformers 和 HF token）
 # os.environ['EMBED_MODEL_TYPE'] = 'local'
 # os.environ['EMBED_MODEL_NAME'] = 'sentence-transformers/all-MiniLM-L6-v2'
