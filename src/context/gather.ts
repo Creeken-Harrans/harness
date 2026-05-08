@@ -37,7 +37,10 @@ function findAgentsFiles(workspaceRoot: string): string[] {
 function formatMemories(memories: MemoryEntry[]): string {
   if (memories.length === 0) return "No relevant memories found.";
   return memories
-    .map((m, i) => String(i + 1) + ". [" + m.createdAt + "] " + m.text + (m.tags.length ? " #" + m.tags.join(" #") : ""))
+    .map((m, i) => {
+      const text = m.text.length > 2000 ? truncateText(m.text, 2000).text : m.text;
+      return String(i + 1) + ". [" + m.createdAt + "] " + text + (m.tags.length ? " #" + m.tags.join(" #") : "");
+    })
     .join("\n");
 }
 

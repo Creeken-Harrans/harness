@@ -53,51 +53,55 @@ function makeRunner() {
     workspace,
     ask: async () => "y",
   });
-  return { runner };
+  return { runner, dataDir: config.dataDir };
 }
 
 async function runCase(evalCase: EvalCase): Promise<EvalCaseResult> {
   const started = Date.now();
-  const { runner } = makeRunner();
-  const toolCalls: EvalCaseResult["toolCalls"] = [];
-  const errors: string[] = [];
-  let finalText = "";
-  let deniedToolCount = 0;
+  const { runner, dataDir } = makeRunner();
+  try {
+    const toolCalls: EvalCaseResult["toolCalls"] = [];
+    const errors: string[] = [];
+    let finalText = "";
+    let deniedToolCount = 0;
 
-  for (const call of evalCase.toolCalls ?? []) {
-    if (evalCase.deniedTools?.includes(call.name)) {
-      deniedToolCount += 1;
-      continue;
+    for (const call of evalCase.toolCalls ?? []) {
+      if (evalCase.deniedTools?.includes(call.name)) {
+        deniedToolCount += 1;
+        continue;
+      }
+      if (evalCase.allowedTools && !evalCase.allowedTools.includes(call.name)) {
+        deniedToolCount += 1;
+        continue;
+      }
+      const stream = runner.runWithEvents({
+        id: "eval_" + evalCase.id + "_" + call.name,
+        type: "function",
+        function: { name: call.name, arguments: JSON.stringify(call.arguments) },
+      }, "eval_" + evalCase.id);
+      let next = await stream.next();
+      while (!next.done) next = await stream.next();
+      const result = next.value;
+      finalText += result + "\n";
+      const ok = /"ok": true/.test(result);
+      if (!ok && /denied|refusing|escapes|outside workspace/i.test(result)) deniedToolCount += 1;
+      toolCalls.push({ name: call.name, ok, result });
     }
-    if (evalCase.allowedTools && !evalCase.allowedTools.includes(call.name)) {
-      deniedToolCount += 1;
-      continue;
-    }
-    const stream = runner.runWithEvents({
-      id: "eval_" + evalCase.id + "_" + call.name,
-      type: "function",
-      function: { name: call.name, arguments: JSON.stringify(call.arguments) },
-    }, "eval_" + evalCase.id);
-    let next = await stream.next();
-    while (!next.done) next = await stream.next();
-    const result = next.value;
-    finalText += result + "\n";
-    const ok = /"ok": true/.test(result);
-    if (!ok && /denied|refusing|escapes|outside workspace/i.test(result)) deniedToolCount += 1;
-    toolCalls.push({ name: call.name, ok, result });
+
+    const partial: EvalCaseResult = {
+      case: evalCase,
+      ok: false,
+      finalText,
+      toolCalls,
+      deniedToolCount,
+      durationMs: Date.now() - started,
+      errors,
+    };
+    const judged = judgeEvalCase(evalCase, partial);
+    return { ...partial, ok: judged.ok, errors: [...errors, ...judged.reasons] };
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
   }
-
-  const partial: EvalCaseResult = {
-    case: evalCase,
-    ok: false,
-    finalText,
-    toolCalls,
-    deniedToolCount,
-    durationMs: Date.now() - started,
-    errors,
-  };
-  const judged = judgeEvalCase(evalCase, partial);
-  return { ...partial, ok: judged.ok, errors: [...errors, ...judged.reasons] };
 }
 
 export async function runEvalSuite(casesDir = path.resolve(process.cwd(), "evals/cases")) {

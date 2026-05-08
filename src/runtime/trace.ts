@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { AppConfig } from "../config/config.js";
 import type { AgentEvent } from "./events.js";
+import { redactValue } from "../security/secrets.js";
 
 export type TraceRecord = {
   ts: string;
@@ -9,31 +10,6 @@ export type TraceRecord = {
   type: string;
   [key: string]: unknown;
 };
-
-function redactString(value: string, config: AppConfig): string {
-  let out = value;
-  if (config.apiKey) {
-    out = out.split(config.apiKey).join("[REDACTED_API_KEY]");
-  }
-  return out.replace(/sk-[A-Za-z0-9_-]{12,}/g, "sk-[REDACTED]");
-}
-
-function redactValue(value: unknown, config: AppConfig): unknown {
-  if (typeof value === "string") return redactString(value, config);
-  if (Array.isArray(value)) return value.map((item) => redactValue(item, config));
-  if (value && typeof value === "object") {
-    const output: Record<string, unknown> = {};
-    for (const [key, nested] of Object.entries(value)) {
-      if (/api[_-]?key|authorization|token|secret/i.test(key)) {
-        output[key] = "[REDACTED]";
-      } else {
-        output[key] = redactValue(nested, config);
-      }
-    }
-    return output;
-  }
-  return value;
-}
 
 export class TraceWriter {
   private readonly filePath: string;
