@@ -3,15 +3,23 @@ node_modules/
 
 # === Build output ===
 dist/
+*.egg-info/
 
 # === Secrets & environment ===
-.env
+.env*
 !.env.example
 
 # === Python bytecode ===
 __pycache__/
 *.pyc
 *.pyo
+
+# === Jupyter ===
+.ipynb_checkpoints/
+
+# === Archives ===
+*.tar.gz
+*.zip
 
 # === Runtime data ===
 data/*.json
@@ -22,12 +30,18 @@ data/notes/*.md
 data/todos/
 data/devlogs/
 evals/reports/*.json
+**/output*.txt
 
 # === Logs ===
 *.log
 
 # === IDE / editor ===
 .vscode/
+.idea/
+
+# === OS files ===
+.DS_Store
+Thumbs.db
 
 # === Upstream reference (not part of this project) ===
 hello-agents/

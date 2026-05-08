@@ -31,6 +31,9 @@ agent = SimpleAgent(
 # 创建评估工具
 gaia_tool = GAIAEvaluationTool()
 
+results_l2 = None
+results_l3 = None
+
 # ============================================================
 # 最佳实践1：分级评估
 # ============================================================
@@ -121,11 +124,11 @@ def interpret_results(level, exact_match_rate):
             print("  - 优化工具链的组合使用")
 
 # 解读结果
-if 'results_l1' in locals():
+if results_l1 is not None:
     interpret_results(1, results_l1['exact_match_rate'])
-if 'results_l2' in locals():
+if results_l2 is not None:
     interpret_results(2, results_l2['exact_match_rate'])
-if 'results_l3' in locals():
+if results_l3 is not None:
     interpret_results(3, results_l3['exact_match_rate'])
 
 # ============================================================
@@ -135,13 +138,13 @@ print("\n" + "="*60)
 print("难度递进分析")
 print("="*60)
 
-if 'results_l1' in locals() and 'results_l2' in locals():
+if results_l1 is not None and results_l2 is not None:
     if results_l1['exact_match_rate'] > results_l2['exact_match_rate']:
         print("✅ 正常递进：Level 1 > Level 2")
     else:
         print("⚠️ 异常情况：Level 2 >= Level 1（可能是数据集偏差或智能体特性）")
 
-if 'results_l2' in locals() and 'results_l3' in locals():
+if results_l2 is not None and results_l3 is not None:
     if results_l2['exact_match_rate'] > results_l3['exact_match_rate']:
         print("✅ 正常递进：Level 2 > Level 3")
     else:

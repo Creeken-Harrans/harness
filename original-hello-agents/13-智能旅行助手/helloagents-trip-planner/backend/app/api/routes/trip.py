@@ -3,8 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from ...models.schemas import (
     TripRequest,
-    TripPlanResponse,
-    ErrorResponse
+    TripPlanResponse
 )
 from ...agents.trip_planner_agent import get_trip_planner_agent
 
@@ -75,8 +74,13 @@ async def health_check():
         return {
             "status": "healthy",
             "service": "trip-planner",
-            "agent_name": agent.agent.name,
-            "tools_count": len(agent.agent.list_tools())
+            "agents": {
+                "attraction_agent": agent.attraction_agent.name,
+                "weather_agent": agent.weather_agent.name,
+                "hotel_agent": agent.hotel_agent.name,
+                "planner_agent": agent.planner_agent.name
+            },
+            "tools_count": len(agent.attraction_agent.list_tools())
         }
     except Exception as e:
         raise HTTPException(

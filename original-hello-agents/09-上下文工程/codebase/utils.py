@@ -57,7 +57,7 @@ def ensure_dir(directory: str) -> None:
         os.makedirs(directory)
 
 
-def format_size(size_bytes: int) -> str:
+def format_size(size_bytes: float) -> str:
     """
     格式化文件大小
     

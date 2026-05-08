@@ -51,24 +51,25 @@ class ContextAwareAgent(SimpleAgent):
             {"role": "user", "content": input_text}
         ]
         response = self.llm.invoke(messages)
+        response_text = response.content if hasattr(response, 'content') else str(response)
 
         # 3. 更新对话历史
         self.conversation_history.append(
             Message(content=input_text, role="user", timestamp=datetime.now())
         )
         self.conversation_history.append(
-            Message(content=response, role="assistant", timestamp=datetime.now())
+            Message(content=response_text, role="assistant", timestamp=datetime.now())
         )
 
         # 4. 将重要交互记录到记忆系统
         # self.memory_tool.run({
         #     "action": "add",
-        #     "content": f"Q: {input_text}\nA: {response[:200]}...",  # 摘要
+        #     "content": f"Q: {input_text}\nA: {response_text[:200]}...",  # 摘要
         #     "memory_type": "episodic",
         #     "importance": 0.6
         # })
 
-        return response
+        return response_text
 
 
 def main():

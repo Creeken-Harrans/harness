@@ -1,11 +1,10 @@
 """多智能体旅行规划系统"""
 
 import json
-from typing import Dict, Any, List
 from hello_agents import SimpleAgent
 from hello_agents.tools import MCPTool
 from ..services.llm_service import get_llm
-from ..models.schemas import TripRequest, TripPlan, DayPlan, Attraction, Meal, WeatherInfo, Location, Hotel
+from ..models.schemas import TripRequest, TripPlan, DayPlan, Attraction, Meal, Location
 from ..config import get_settings
 
 # ============ Agent提示词 ============
@@ -166,13 +165,10 @@ class MultiAgentTripPlanner:
             # 创建共享的MCP工具(只创建一次)
             print("  - 创建共享MCP工具...")
             self.amap_tool = MCPTool(
-                name="amap",
-                description="高德地图服务",
-                server_command=["uvx", "amap-mcp-server"],
-                env={"AMAP_MAPS_API_KEY": settings.amap_api_key},
-                auto_expand=True
+                server_command=["uvx", "amap-mcp-server"]
             )
-            self.amap_tool.expandable=True
+            # Store AMAP API key for MCP server env
+            self.amap_tool._amap_api_key = settings.amap_api_key
 
             # 创建景点搜索Agent
             print("  - 创建景点搜索Agent...")

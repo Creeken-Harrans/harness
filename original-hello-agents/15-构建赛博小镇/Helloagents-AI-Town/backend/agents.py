@@ -333,7 +333,7 @@ class NPCAgentManager:
 
         print(f"  💾 对话已保存到{npc_name}的记忆中")
 
-    def get_npc_info(self, npc_name: str) -> Dict[str, str]:
+    def get_npc_info(self, npc_name: str) -> Dict[str, object]:
         """获取NPC信息"""
         if npc_name not in NPC_ROLES:
             return {}

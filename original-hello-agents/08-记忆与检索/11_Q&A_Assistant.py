@@ -246,7 +246,7 @@ class PDFLearningAssistant:
 def create_gradio_ui():
     """创建Gradio Web UI"""
     # 全局助手实例
-    assistant_state = {"assistant": None}
+    assistant_state: dict[str, object] = {"assistant": None}
 
     def init_assistant(user_id: str) -> str:
         """初始化助手"""

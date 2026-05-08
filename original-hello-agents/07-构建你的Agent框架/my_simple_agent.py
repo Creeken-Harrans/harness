@@ -50,10 +50,11 @@ class MySimpleAgent(SimpleAgent):
         # 如果没有启用工具调用，使用简单对话逻辑
         if not self.enable_tool_calling:
             response = self.llm.invoke(messages, **kwargs)
+            response_text = response.content if hasattr(response, 'content') else str(response)
             self.add_message(Message(input_text, "user"))
-            self.add_message(Message(response, "assistant"))
+            self.add_message(Message(response_text, "assistant"))
             print(f"✅ {self.name} 响应完成")
-            return response
+            return response_text
 
         # 支持多轮工具调用的逻辑
         return self._run_with_tools(messages, input_text, max_tool_iterations, **kwargs)
@@ -124,12 +125,14 @@ class MySimpleAgent(SimpleAgent):
         if current_iteration >= max_tool_iterations and not final_response:
             final_response = self.llm.invoke(messages, **kwargs)
 
+        final_response_text = final_response.content if hasattr(final_response, 'content') else str(final_response)
+
         # 保存到历史记录
         self.add_message(Message(input_text, "user"))
-        self.add_message(Message(final_response, "assistant"))
+        self.add_message(Message(final_response_text, "assistant"))
         print(f"✅ {self.name} 响应完成")
 
-        return final_response
+        return final_response_text
 
     def _parse_tool_calls(self, text: str) -> list:
         """解析文本中的工具调用"""

@@ -39,7 +39,7 @@ llm = ChatOpenAI(
 # 初始化Tavily客户端
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-def understand_query_node(state: SearchState) -> SearchState:
+def understand_query_node(state: SearchState) -> dict:
     """步骤1：理解用户查询并生成搜索关键词"""
     
     # 获取最新的用户消息
@@ -77,7 +77,7 @@ def understand_query_node(state: SearchState) -> SearchState:
         "messages": [AIMessage(content=f"我理解您的需求：{response.content}")]
     }
 
-def tavily_search_node(state: SearchState) -> SearchState:
+def tavily_search_node(state: SearchState) -> dict:
     """步骤2：使用Tavily API进行真实搜索"""
     
     search_query = state["search_query"]
@@ -129,7 +129,7 @@ def tavily_search_node(state: SearchState) -> SearchState:
             "messages": [AIMessage(content="❌ 搜索遇到问题，我将基于已有知识为您回答")]
         }
 
-def generate_answer_node(state: SearchState) -> SearchState:
+def generate_answer_node(state: SearchState) -> dict:
     """步骤3：基于搜索结果生成最终答案"""
     
     # 检查是否有搜索结果

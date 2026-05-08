@@ -92,7 +92,7 @@ class MyPlanAndSolveAgent:
         """调用LLM"""
         messages = [{"role": "user", "content": prompt}]
         response = self.llm.invoke(messages)
-        return response if response else ""
+        return response.content if response else ""
 
     def _parse_plan(self, plan_text: str) -> List[str]:
         """解析计划文本为步骤列表"""

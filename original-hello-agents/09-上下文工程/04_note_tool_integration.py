@@ -65,15 +65,16 @@ class ProjectAssistant(SimpleAgent):
             {"role": "user", "content": input_text}
         ]
         response = self.llm.invoke(messages)
+        response_text = response.content if hasattr(response, 'content') else str(response)
 
         # 5. 如果需要,将交互记录为笔记
         if note_as_action:
-            self._save_as_note(input_text, response)
+            self._save_as_note(input_text, response_text)
 
         # 6. 更新对话历史
-        self._update_history(input_text, response)
+        self._update_history(input_text, response_text)
 
-        return response
+        return response_text
 
     def _retrieve_relevant_notes(self, query: str, limit: int = 3) -> List[Dict]:
         """检索相关笔记"""

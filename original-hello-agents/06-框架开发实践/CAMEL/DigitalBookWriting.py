@@ -49,10 +49,11 @@ input_msg = role_play_session.init_chat()
 while n < chat_turn_limit:
     n += 1
     assistant_response, user_response = role_play_session.step(input_msg)
-    
+    assert user_response.msg is not None and assistant_response.msg is not None
+
     print_text_animated(Fore.BLUE + f"作家:\n\n{user_response.msg.content}\n")
     print_text_animated(Fore.GREEN + f"心理学家:\n\n{assistant_response.msg.content}\n")
-    
+
     # 检查任务完成标志
     if "CAMEL_TASK_DONE" in user_response.msg.content:
         print(Fore.MAGENTA + "✅ 电子书创作完成！")

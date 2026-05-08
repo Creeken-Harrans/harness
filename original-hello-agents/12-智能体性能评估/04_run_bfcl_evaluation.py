@@ -75,7 +75,7 @@ def run_evaluation(category: str, max_samples: int, model_name: str) -> dict:
     
     # 检查数据
     if not check_bfcl_data(bfcl_data_dir):
-        return None
+        return {}
     
     # 加载数据集
     print(f"\n📚 加载BFCL数据集...")

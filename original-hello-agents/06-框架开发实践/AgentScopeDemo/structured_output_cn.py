@@ -27,7 +27,7 @@ def get_vote_model_cn(agents: list[AgentBase]) -> type[BaseModel]:
     class VoteModelCN(BaseModel):
         """中文版投票输出格式"""
         
-        vote: Literal[tuple(_.name for _ in agents)] = Field(
+        vote: Literal[tuple(_.name for _ in agents)] = Field(  # type: ignore[valid-type]
             description="你要投票淘汰的玩家姓名",
         )
         reason: str = Field(
@@ -68,7 +68,7 @@ def get_seer_model_cn(agents: list[AgentBase]) -> type[BaseModel]:
     class SeerModelCN(BaseModel):
         """中文版预言家查验格式"""
         
-        target: Literal[tuple(_.name for _ in agents)] = Field(
+        target: Literal[tuple(_.name for _ in agents)] = Field(  # type: ignore[valid-type]
             description="要查验的玩家姓名",
         )
         check_reason: str = Field(
@@ -91,7 +91,7 @@ def get_hunter_model_cn(agents: list[AgentBase]) -> type[BaseModel]:
         shoot: bool = Field(
             description="是否使用开枪技能",
         )
-        target: Optional[Literal[tuple(_.name for _ in agents)]] = Field(
+        target: Optional[Literal[tuple(_.name for _ in agents)]] = Field(  # type: ignore[valid-type]
             description="开枪目标玩家姓名",
             default=None
         )

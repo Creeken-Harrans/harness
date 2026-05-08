@@ -131,6 +131,8 @@ Please output in the following JSON format, avoid using special escape character
                     tqdm.write(f"❌ 生成失败，已达最大重试次数: {e}")
                     return self._get_default_problem()
 
+        return self._get_default_problem()
+
     def _build_prompt(self) -> str:
         """构建生成提示词"""
         if not self.use_reference_examples or not self.reference_examples:
