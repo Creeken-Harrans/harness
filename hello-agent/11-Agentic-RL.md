@@ -2,7 +2,16 @@
 
 ## 原教程讲了什么
 
-Agentic Reinforcement Learning 的概念：如何用强化学习训练 Agent 的决策能力，轨迹收集、奖励设计、策略优化。
+hello-agents 第十一章聚焦 Agentic RL——将强化学习应用于 Agent 训练的前沿方向，系统讲解了：
+
+- **Agentic RL 的定义**：与传统 RL 不同，Agentic RL 的 action space 是 tool calling（而非游戏动作）、observation 是 tool result（而非游戏画面）、reward 来自任务完成度（而非游戏分数）
+- **轨迹收集**：Agent 执行任务时产生的完整交互序列——每一步的 thought、tool call、tool result、final answer——是 RL 训练的核心数据
+- **奖励设计**：如何定义 reward signal——任务是否成功、工具调用次数是否合理、最终回答质量如何
+- **策略优化**：RLHF（Reinforcement Learning from Human Feedback）、DPO（Direct Preference Optimization）、GRPO（Group Relative Policy Optimization）等算法如何利用轨迹数据优化模型
+
+**不足**：第一，原教程停留在**概念介绍**——讲解了 Agentic RL 是什么、有哪些算法，但没有给出可用的轨迹数据格式和收集工具。读者知道"需要收集轨迹"，但没有一个结构化的 `Trajectory` schema 可以直接用于训练 pipeline。第二，轨迹数据没有脱敏——真实 Agent 执行中会产生包含 API key、文件路径、内部配置的工具输出，直接用于训练可能导致信息泄漏。第三，缺少自动的成功判定——训练需要大量标注数据，但原教程没有提供基于 `stoppedReason` 的自动 success label。
+
+**本 harness 的改进**：虽然 harness **不做训练**，但它为 Agentic RL 提供了最关键的工程基础——**结构化轨迹导出**。`AgentTrajectory` schema 包含完整的训练所需字段：`userInput`（任务）、`toolCalls`（每次工具调用的名称/参数/成功/观察摘要）、`modelMessagesSummary`（模型输出摘要）、`finalAnswer`（最终回答）、`success`（自动计算 `stoppedReason === "final"`）、`humanFeedback`（预留标注字段）、`usage`（token 消耗）。`TrajectoryRecorder` 在 `runAgentLoop` 启动时就创建，对每个 `AgentEvent` 自动累积，done 事件时写入 JSON 文件。所有轨迹数据在写入前经过 `redactValue()` 脱敏（API key、`sk-*` token、Authorization Bearer、PEM 私钥等）。这为后续的 RL 训练 pipeline 提供了直接可用的数据格式。
 
 ## 本 Harness 如何映射
 

@@ -2,7 +2,16 @@
 
 ## 原教程讲了什么
 
-从零开始设计并实现一个 Agent 框架，包括架构设计、工具系统、记忆管理、多 Agent 协作。
+hello-agents 第七章是全书最核心的实践章节之一，教你从零设计并实现一个 Agent 框架，覆盖：
+
+- **架构设计**：Agent 框架的模块划分——LLM 调用层、工具系统、记忆管理、任务调度、对话管理
+- **工具系统**：定义工具接口、工具注册、参数解析、工具执行和结果序列化
+- **记忆管理**：短期记忆（对话历史窗口）和长期记忆（持久化存储 + 检索）的区分与实现
+- **多 Agent 协作**：多个 Agent 实例间的通信和任务分发机制
+
+**不足**：第一，原教程实现的是**教学型框架骨架**——能跑通 demo，但缺少 streaming（同步 `llm.chat()` 阻塞等待）、缺少安全机制（无 path policy、无 approval gate）、缺少可观测性（靠 `print()` 调试）。第二，框架中 Agent 的多样性通过不同的 while 循环实现——ReAct 一套循环、Plan-Execute 一套循环、Reflection 又一套，公共逻辑（tool calling、error handling、context management）重复出现。第三，Python 同步实现使得 tool 执行时整个 Agent 阻塞，无法实时看到工具输出。
+
+**本 harness 的改进**：本 harness 本身就是第七章的**工程级完整实现**。控制流上，用单一 `AsyncGenerator<AgentEvent, AgentResult>` 替代多种 while 循环——所有行为收敛到一条生成器链上，CLI renderer、TraceWriter、TrajectoryRecorder 都是同一条流的消费者。Agent 多样性通过 prompt-contract 实现——6 种 agent mode 共享同一个 `runAgentLoop`，差异仅在于注入的 system instruction。安全（path policy / approval gate / hard deny / redaction）和可观测性（trace jsonl + trajectory json）内建在核心 loop 中，从第一行代码就在控制流里，而非事后"插件"。
 
 ## 本 Harness 如何映射
 
