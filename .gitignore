@@ -47,3 +47,4 @@ Thumbs.db
 hello-agents/
 crates/
 original-hello-agents/.upstream-hello-agents
+.audit/
