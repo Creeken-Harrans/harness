@@ -19,7 +19,7 @@ CHINESE_NAMES = [
 ]
 
 
-def get_chinese_name(character: str = None) -> str:
+def get_chinese_name(character: str | None = None) -> str:
     """获取中文角色名"""
     if character and character in CHINESE_NAMES:
         return character
@@ -32,9 +32,9 @@ def format_player_list(players: List[AgentBase], show_roles: bool = False) -> st
         return "无玩家"
     
     if show_roles:
-        return "、".join([f"{p.name}({getattr(p, 'role', '未知')})" for p in players])
+        return "、".join([f"{p.name}({getattr(p, 'role', '未知')})" for p in players])  # type: ignore[attr-defined]  # agentscope AgentBase 运行时具有 name 属性
     else:
-        return "、".join([p.name for p in players])
+        return "、".join([p.name for p in players])  # type: ignore[attr-defined]  # agentscope AgentBase 运行时具有 name 属性
 
 
 def majority_vote_cn(votes: Dict[str, str]) -> tuple[str, int]:
@@ -50,7 +50,7 @@ def majority_vote_cn(votes: Dict[str, str]) -> tuple[str, int]:
 
 def check_winning_cn(alive_players: List[AgentBase], roles: Dict[str, str]) -> Optional[str]:
     """检查中文版游戏胜利条件"""
-    alive_roles = [roles.get(p.name, "村民") for p in alive_players]
+    alive_roles = [roles.get(p.name, "村民") for p in alive_players]  # type: ignore[attr-defined]  # agentscope AgentBase 运行时具有 name 属性
     werewolf_count = alive_roles.count("狼人")
     villager_count = len(alive_roles) - werewolf_count
     

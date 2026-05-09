@@ -3,7 +3,7 @@
 """
 from dotenv import load_dotenv
 from hello_agents import HelloAgentsLLM
-from my_reflection_agent import MyReflectionAgent
+from my_reflection_agent import MyReflectionAgent  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 load_dotenv("/home/Creeken/Paper/harness/.env")
 llm = HelloAgentsLLM()

@@ -58,7 +58,7 @@ class CodebaseMaintainer:
         # 初始化上下文构建器
         self.context_builder = ContextBuilder(
             memory_tool=self.memory_tool,
-            rag_tool=None,  # 本案例不使用 RAG
+            rag_tool=None,  # 本案例不使用 RAG # pyright: ignore[reportCallIssue]
             config=ContextConfig(
                 max_tokens=4000,
                 reserve_ratio=0.15,
@@ -180,7 +180,7 @@ class CodebaseMaintainer:
         """统计工具使用情况"""
         # 从 agent 的执行历史中统计
         if hasattr(self.agent, 'message_history'):
-            for msg in self.agent.message_history[-10:]:  # 只看最近10条
+            for msg in self.agent.message_history[-10:]:  # 只看最近10条 # pyright: ignore[reportAttributeAccessIssue]
                 if msg.role == "tool":
                     self.stats["tool_calls"] += 1
                     # 根据工具名统计
@@ -380,7 +380,7 @@ class CodebaseMaintainer:
         title: str,
         content: str,
         note_type: str = "general",
-        tags: List[str] = None
+        tags: List[str] | None = None
     ) -> str:
         """创建笔记"""
         result = self.note_tool.run({

@@ -84,10 +84,10 @@ class AgentIntegrationDemo:
             # 显示工具的主要功能
             if tool_name == "memory":
                 print(f"  主要功能: 记忆管理、搜索、整合、遗忘")
-                print(f"  记忆类型: {tool_instance.memory_types}")
+                print(f"  记忆类型: {tool_instance.memory_types}")  # type: ignore[attr-defined]  # MemoryTool 实例运行时属性
             elif tool_name == "rag":
                 print(f"  主要功能: 文档处理、智能问答、知识检索")
-                print(f"  命名空间: {tool_instance.rag_namespace}")
+                print(f"  命名空间: {tool_instance.rag_namespace}")  # type: ignore[attr-defined]  # RAGTool 实例运行时属性
         
         # 演示工具发现机制
         print(f"\n🔍 工具能力发现:")

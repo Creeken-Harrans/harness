@@ -50,12 +50,38 @@ class MyReActAgent(ReActAgent):
         max_steps: int = 5,
         custom_prompt: Optional[str] = None
     ):
-        super().__init__(name, llm, system_prompt, config)
+        super().__init__(name, llm, tool_registry, system_prompt, config, max_steps)
         self.tool_registry = tool_registry
         self.max_steps = max_steps
         self.current_history = []
         self.prompt_template = custom_prompt if custom_prompt else MY_REACT_PROMPT
         print(f"✅ {name} 初始化完成，最大步数: {max_steps}")
+
+    def _parse_output(self, response_text: str) -> tuple:
+        """从 LLM 响应中提取 Thought 和 Action"""
+        thought = ""
+        action = ""
+        thought_match = re.search(r'Thought:\s*(.+?)(?=\nAction:|\Z)', response_text, re.DOTALL)
+        if thought_match:
+            thought = thought_match.group(1).strip()
+        action_match = re.search(r'Action:\s*(.+)', response_text)
+        if action_match:
+            action = action_match.group(1).strip()
+        return thought, action
+
+    def _parse_action_input(self, action: str) -> str:
+        """从 Finish[答案] 中提取最终答案"""
+        match = re.match(r'Finish\[(.+)\]', action.strip())
+        if match:
+            return match.group(1).strip()
+        return action.strip()
+
+    def _parse_action(self, action: str) -> tuple:
+        """从 工具名[参数] 中提取工具名和输入"""
+        match = re.match(r'(\w+)\[(.+)\]', action.strip())
+        if match:
+            return match.group(1).strip(), match.group(2).strip()
+        return "", ""
 
     def run(self, input_text: str, **kwargs) -> str:
         """运行ReAct Agent"""
@@ -79,7 +105,8 @@ class MyReActAgent(ReActAgent):
 
             # 2. 调用LLM
             messages = [{"role": "user", "content": prompt}]
-            response_text = self.llm.invoke(messages, **kwargs)
+            response = self.llm.invoke(messages, **kwargs)
+            response_text = response.content if hasattr(response, 'content') else str(response)
 
             # 3. 解析输出
             thought, action = self._parse_output(response_text)

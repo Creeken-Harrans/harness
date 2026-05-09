@@ -45,6 +45,8 @@ def _eval_node(node, operators, functions):
         op = operators.get(type(node.op))
         return op(left, right)
     elif isinstance(node, ast.Call):
+        if not isinstance(node.func, ast.Name):
+            return None
         func_name = node.func.id
         if func_name in functions:
             args = [_eval_node(arg, operators, functions) for arg in node.args]

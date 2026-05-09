@@ -17,7 +17,7 @@ import os
 import json
 
 # 添加HelloAgents路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "HelloAgents"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # 添加 original-hello-agents 以导入 hello_agents
 
 from hello_agents import HelloAgentsLLM
 from hello_agents.evaluation import LLMJudge
@@ -54,7 +54,7 @@ for i, problem in enumerate(generated_problems, 1):
     print(f"题目ID: {problem['problem_id']}")
     
     # 评估单道题目
-    result = judge.evaluate_single(problem)
+    result = judge.evaluate_single(problem)  # type: ignore[arg-type]  # evaluate_single 运行时支持 dict 参数（通过 isinstance 检查）
     
     # 显示评估结果
     print(f"\n评估结果:")

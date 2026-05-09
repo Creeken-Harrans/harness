@@ -10,7 +10,7 @@ python data_generation/step1_generate_only.py 30 3.0
 """
 
 import sys
-from aime_generator import AIMEGenerator
+from aime_generator import AIMEGenerator  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 
 def main():

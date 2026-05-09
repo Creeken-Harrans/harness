@@ -169,7 +169,7 @@ class Executor:
         Returns:
             步骤执行结果
         """
-        messages = [
+        messages: List[Dict[str, Any]] = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": context}
         ]
@@ -356,7 +356,7 @@ class PlanSolveAgent(Agent):
 
         return final_answer
 
-    async def arun_stream(  # type: ignore[override]
+    async def arun_stream(  # type: ignore[override]  # 子类流式接口签名与基类不同，异步生成器返回类型简化
         self,
         input_text: str,
         on_start: LifecycleHook = None,

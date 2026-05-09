@@ -5,13 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 
-from config import settings
-from models import (
-    ChatRequest, ChatResponse, 
+from config import settings  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
+from models import (  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
+    ChatRequest, ChatResponse,
     NPCStatusResponse, NPCListResponse, NPCInfo
 )
-from agents import get_npc_manager
-from state_manager import get_state_manager
+from agents import get_npc_manager  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
+from state_manager import get_state_manager  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 # 生命周期管理
 @asynccontextmanager
@@ -122,7 +122,7 @@ async def chat_with_npc(request: ChatRequest):
         
         return ChatResponse(
             npc_name=request.npc_name,
-            npc_title=npc_info["title"],
+            npc_title=str(npc_info["title"]),
             message=response_text,
             success=True
         )
@@ -233,7 +233,7 @@ async def get_npc_memories(npc_name: str, limit: int = 10):
         )
 
 @app.delete("/npcs/{npc_name}/memories")
-async def clear_npc_memories(npc_name: str, memory_type: str = None):
+async def clear_npc_memories(npc_name: str, memory_type: str | None = None):
     """清空NPC的记忆 (用于测试)
 
     Args:

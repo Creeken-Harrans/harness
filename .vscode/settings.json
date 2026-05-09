@@ -2,5 +2,8 @@
   "js/ts.tsdk.path": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "python-envs.defaultEnvManager": "ms-python.python:conda",
-  "python-envs.defaultPackageManager": "ms-python.python:conda"
+  "python-envs.defaultPackageManager": "ms-python.python:conda",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/original-hello-agents"
+  ]
 }

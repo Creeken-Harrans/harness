@@ -1,6 +1,6 @@
 """工具注册表 - HelloAgents原生工具系统"""
 
-from typing import Optional, Any, Callable, Dict
+from typing import Optional, Any, Callable, Dict, cast
 import time
 from .base import Tool
 from .response import ToolResponse, ToolStatus
@@ -23,6 +23,9 @@ class ToolRegistry:
 
         # 文件元数据缓存（用于乐观锁机制）
         self.read_metadata_cache: Dict[str, Dict[str, Any]] = {}
+
+        # 临时禁用的工具（用于子代理隔离等场景）
+        self._temp_disabled_tools: Dict[str, Any] = {}
 
         # 熔断器（默认启用）
         self.circuit_breaker = circuit_breaker or CircuitBreaker()
@@ -88,7 +91,8 @@ class ToolRegistry:
 
         # 自动提取名称
         if name is None:
-            name = func.__name__
+            name = getattr(func, '__name__', 'unnamed')
+        name = cast(str, name)
 
         # 自动提取描述
         if description is None:

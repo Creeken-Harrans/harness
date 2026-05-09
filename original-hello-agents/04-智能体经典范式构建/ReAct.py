@@ -2,10 +2,11 @@
 第四章 智能体经典范式构建 - ReAct 智能体
 实现 Reasoning + Acting 范式，交替进行推理和工具调用。
 """
+
 import re
 from openai.types.chat import ChatCompletionMessageParam
-from llm_client import HelloAgentsLLM
-from tools import ToolExecutor, search
+from hello_agents import HelloAgentsLLM
+from hello_agents.tools import ToolExecutor, search
 
 REACT_PROMPT_TEMPLATE = """
 请注意，你是一个有能力调用外部工具的智能助手。
@@ -48,7 +49,8 @@ class ReActAgent:
             prompt = REACT_PROMPT_TEMPLATE.format(tools=tools_desc, question=question, history=history_str)
 
             messages: list[ChatCompletionMessageParam] = [{"role": "user", "content": prompt}]
-            response_text = self.llm_client.think(messages=messages)
+            raw_response = self.llm_client.think(messages=messages)  # type: ignore[arg-type]  # 教程兼容：think 接受 ChatCompletionMessageParam
+            response_text: str = "".join(raw_response) if hasattr(raw_response, '__iter__') else str(raw_response)
             if not response_text:
                 print("错误：LLM未能返回有效响应。")
                 break

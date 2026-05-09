@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 from hello_agents.memory import MemoryConfig, MemoryItem, _SimpleMemoryStore
+from .base import LightweightTool
 
 
 def _float(v: Any, default: float = 0.0) -> float:
@@ -25,14 +26,17 @@ def _str(v: Any, default: str = "") -> str:
     return str(v)
 
 
-class MemoryTool:
-    def __init__(self, user_id="default", memory_types=None, memory_config=None):
-        self.user_id = user_id
-        self.memory_types = memory_types or ["working", "episodic", "semantic", "perceptual"]
+class MemoryTool(LightweightTool):
+    def __init__(self, user_id="default", memory_types=None, memory_config=None, **kwargs):
+        super().__init__(name="memory", description="Memory management tool")
+        self.user_id = kwargs.pop("user_id", user_id)
+        self.memory_types = memory_types or kwargs.pop("memory_types", None) or ["working", "episodic", "semantic", "perceptual"]
         self.memory_config = memory_config or MemoryConfig()
-        self.memory_manager = _MemoryManager(user_id, self.memory_types, self.memory_config)
+        self.memory_manager = _MemoryManager(self.user_id, self.memory_types, self.memory_config)
+        self._extra_config = kwargs
 
-    def run(self, params: dict | str) -> str:
+    # 教程兼容：run 简化签名故意与 Tool 基类不同，接受 str|dict 并返回 str
+    def run(self, params: dict | str) -> str:  # type: ignore[override]  # 教程简化协议：run() 返回 str 而非 ToolResponse
         if isinstance(params, str):
             params = {"action": params}
         action = _str(params.get("action"), "search")

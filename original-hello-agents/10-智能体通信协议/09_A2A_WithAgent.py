@@ -106,9 +106,12 @@ class A2ATool(Tool):
         question = parameters.get('question', '')
         result = self.client.execute_skill(self.skill_name, f"answer {question}")
         if result.get('status') == 'success':
-            return ToolResponse(result.get('result', 'No response'))
+            return ToolResponse.success(text=result.get('result', 'No response'))
         else:
-            return ToolResponse(f"Error: {result.get('error', 'Unknown error')}")
+            return ToolResponse.error(
+                code="EXECUTION_ERROR",
+                message=f"Error: {result.get('error', 'Unknown error')}"
+            )
 
 # 创建工具
 tech_tool = A2ATool(

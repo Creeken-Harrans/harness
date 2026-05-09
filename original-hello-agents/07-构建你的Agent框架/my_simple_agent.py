@@ -93,13 +93,14 @@ class MySimpleAgent(SimpleAgent):
             response = self.llm.invoke(messages, **kwargs)
 
             # 检查是否有工具调用
+            response_text = response.content if hasattr(response, 'content') else str(response)
             tool_calls = self._parse_tool_calls(response)
 
             if tool_calls:
                 print(f"🔧 检测到 {len(tool_calls)} 个工具调用")
                 # 执行所有工具调用并收集结果
                 tool_results = []
-                clean_response = response
+                clean_response = response_text
 
                 for call in tool_calls:
                     result = self._execute_tool_call_by_string(call['tool_name'], call['parameters'])
@@ -118,14 +119,15 @@ class MySimpleAgent(SimpleAgent):
                 continue
 
             # 没有工具调用，这是最终回答
-            final_response = response
+            final_response = response_text
             break
 
         # 如果超过最大迭代次数，获取最后一次回答
         if current_iteration >= max_tool_iterations and not final_response:
             final_response = self.llm.invoke(messages, **kwargs)
 
-        final_response_text = final_response.content if hasattr(final_response, 'content') else str(final_response)
+        final_response_text = final_response if isinstance(final_response, str) else (
+            final_response.content if hasattr(final_response, 'content') else str(final_response))
 
         # 保存到历史记录
         self.add_message(Message(input_text, "user"))
@@ -134,10 +136,11 @@ class MySimpleAgent(SimpleAgent):
 
         return final_response_text
 
-    def _parse_tool_calls(self, text: str) -> list:
-        """解析文本中的工具调用"""
+    def _parse_tool_calls(self, text) -> list:
+        """解析文本中的工具调用 — 接受 str 或 LLMResponse"""
+        text_str = text.content if hasattr(text, 'content') else str(text)
         pattern = r'\[TOOL_CALL:([^:]+):([^\]]+)\]'
-        matches = re.findall(pattern, text)
+        matches = re.findall(pattern, text_str)
 
         tool_calls = []
         for tool_name, parameters in matches:

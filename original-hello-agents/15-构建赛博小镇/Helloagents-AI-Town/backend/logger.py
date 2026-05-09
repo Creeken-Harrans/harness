@@ -52,7 +52,7 @@ def log_affinity(npc_name: str, affinity: float, level: str):
     """记录当前好感度"""
     dialogue_logger.info(f"💖 当前好感度: {affinity:.1f}/100 ({level})")
 
-def log_memory_retrieval(npc_name: str, count: int, memories: list = None):
+def log_memory_retrieval(npc_name: str, count: int, memories: list | None = None):
     """记录记忆检索"""
     dialogue_logger.info(f"🧠 检索到{count}条相关记忆")
     if memories:

@@ -47,7 +47,7 @@ Please output in the following JSON format, avoid using special escape character
     
     def __init__(
         self,
-        llm: HelloAgentsLLM = None,
+        llm: HelloAgentsLLM | None = None,
         delay_seconds: float = 1.0,
         use_reference_examples: bool = True,
         reference_dataset: str = "TianHongZXY/aime-1983-2025"
@@ -74,7 +74,7 @@ Please output in the following JSON format, avoid using special escape character
         )
         self.delay_seconds = delay_seconds
         self.use_reference_examples = use_reference_examples
-        self.reference_examples = []
+        self.reference_examples: list[dict[str, Any]] = []
 
         # 加载参考样例
         if use_reference_examples:
@@ -87,7 +87,7 @@ Please output in the following JSON format, avoid using special escape character
                     dataset = load_dataset(reference_dataset, split="test")
 
                 # 加载所有题目作为参考
-                self.reference_examples = list(dataset)
+                self.reference_examples = list(dataset)  # type: ignore[assignment]  # HuggingFace dataset 类型推断过宽，运行时元素为 dict
                 print(f"   ✓ 已加载 {len(self.reference_examples)} 道参考题目")
 
                 # 统计年份分布（如果有year字段）
@@ -242,7 +242,7 @@ Important Notes:
     def generate_batch(
         self,
         num_problems: int = 30,
-        checkpoint_path: str = None
+        checkpoint_path: str | None = None
     ) -> List[Dict[str, Any]]:
         """
         批量生成题目

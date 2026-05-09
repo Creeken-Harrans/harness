@@ -115,7 +115,7 @@ class CalculatorTool(Tool):
         elif isinstance(node, ast.UnaryOp):
             return self.OPERATORS[type(node.op)](self._eval_node(node.operand))
         elif isinstance(node, ast.Call):
-            func_name = node.func.id
+            func_name = getattr(node.func, 'id', None) or getattr(node.func, 'attr', None)
             if func_name in self.FUNCTIONS:
                 args = [self._eval_node(arg) for arg in node.args]
                 return self.FUNCTIONS[func_name](*args)

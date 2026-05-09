@@ -1,6 +1,6 @@
 """Agent实现模块 - HelloAgents原生Agent范式"""
 
-from .simple_agent import SimpleAgent
+from .simple_agent import SimpleAgent, ToolAwareSimpleAgent
 from .react_agent import ReActAgent
 from .reflection_agent import ReflectionAgent
 from .plan_solve_agent import PlanSolveAgent
@@ -14,6 +14,7 @@ PlanAndSolveAgent = PlanSolveAgent
 
 __all__ = [
     "SimpleAgent",
+    "ToolAwareSimpleAgent",
     "ReActAgent",
     "ReflectionAgent",
     "PlanSolveAgent",

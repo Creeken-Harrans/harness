@@ -4,14 +4,14 @@ import sys
 import os
 
 # 添加HelloAgents到Python路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'HelloAgents'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))  # 添加 original-hello-agents 以导入 hello_agents
 
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.memory import MemoryManager, MemoryConfig, MemoryItem
 from typing import Dict, List, Optional
 from datetime import datetime
-from relationship_manager import RelationshipManager
-from logger import (
+from relationship_manager import RelationshipManager  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
+from logger import (  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
     log_dialogue_start, log_affinity, log_memory_retrieval,
     log_generating_response, log_npc_response, log_analyzing_affinity,
     log_affinity_change, log_memory_saved, log_dialogue_end, log_info
@@ -98,8 +98,8 @@ class NPCAgentManager:
             print("⚠️  将使用模拟模式运行")
             self.llm = None
 
-        self.agents: Dict[str, SimpleAgent] = {}
-        self.memories: Dict[str, MemoryManager] = {}  # ⭐ NPC记忆管理器
+        self.agents: Dict[str, SimpleAgent | None] = {}
+        self.memories: Dict[str, MemoryManager | None] = {}  # ⭐ NPC记忆管理器
         self.relationship_manager: Optional[RelationshipManager] = None  # ⭐ 好感度管理器
 
         # 初始化好感度管理器

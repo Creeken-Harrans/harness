@@ -266,15 +266,13 @@ class DevLogTool(Tool):
                 name="action",
                 type="string",
                 description="操作类型：append（追加）、read（读取）、summary（摘要）、clear（清空）",
-                required=True,
-                enum=["append", "read", "summary", "clear"]
+                required=True
             ),
             ToolParameter(
                 name="category",
                 type="string",
                 description=f"日志类别（append 时必填）：{', '.join(CATEGORIES.keys())}",
-                required=False,
-                enum=list(CATEGORIES.keys())
+                required=False
             ),
             ToolParameter(
                 name="content",
@@ -311,7 +309,7 @@ class DevLogTool(Tool):
                 return self._handle_clear()
             else:
                 return ToolResponse.error(
-                    code=ToolErrorCode.INVALID_PARAMETERS,
+                    code=ToolErrorCode.INVALID_PARAM,
                     message=f"未知操作：{action}"
                 )
 

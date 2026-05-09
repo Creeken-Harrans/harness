@@ -1,15 +1,19 @@
 """NoteTool — persistent note-taking for chapter 9."""
 import json
 import os
-from typing import Dict, Any
+from typing import Any
+from .base import LightweightTool
 
 
-class NoteTool:
-    def __init__(self, storage_dir="./notes"):
-        self.storage_dir = storage_dir
-        os.makedirs(storage_dir, exist_ok=True)
+class NoteTool(LightweightTool):
+    def __init__(self, storage_dir="./notes", **kwargs):
+        super().__init__(name="note", description="Note-taking tool")
+        self.storage_dir = kwargs.pop("workspace", storage_dir)
+        os.makedirs(self.storage_dir, exist_ok=True)
+        self._extra_config = kwargs
 
-    def run(self, params):
+    # 教程兼容：run 简化签名故意与 Tool 基类不同，接受 str|dict 并返回 str
+    def run(self, params):  # type: ignore[override]  # 教程简化协议：run() 返回 str 而非 ToolResponse
         if isinstance(params, str):
             params = {"action": params}
         action = params.get("action", "list")

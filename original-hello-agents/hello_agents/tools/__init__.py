@@ -31,6 +31,30 @@ from .terminal_tool import TerminalTool
 from .search_tool import SearchTool
 from .evaluation_tools import BFCLEvaluationTool, GAIAEvaluationTool, LLMJudgeTool, WinRateTool
 
+# ToolExecutor — 兼容 ch04 教程的 ToolRegistry 包装器
+class ToolExecutor:
+    """ch04 教程兼容的 ToolExecutor，内部委托给 ToolRegistry。"""
+
+    def __init__(self):
+        self._registry = ToolRegistry()
+        self._tools: dict = {}
+
+    def registerTool(self, name: str, description: str, func):
+        self._tools[name] = func
+        self._registry.register_function(func, name=name, description=description)
+
+    def getTool(self, name: str):
+        return self._tools.get(name)
+
+    def getAvailableTools(self) -> str:
+        return "\n".join(f"- {n}" for n in self._tools)
+
+
+# 兼容 ch04/07 教程的独立 search 函数
+def search(query: str) -> str:
+    """ch04/ch07 教程兼容的搜索函数桩。"""
+    return f"[search results for: {query}]"
+
 __all__ = [
     # 基础工具系统
     "Tool",
@@ -87,4 +111,8 @@ __all__ = [
     "GAIAEvaluationTool",
     "LLMJudgeTool",
     "WinRateTool",
+
+    # ch04/07 教程兼容
+    "ToolExecutor",
+    "search",
 ]

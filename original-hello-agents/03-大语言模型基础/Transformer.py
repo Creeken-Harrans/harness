@@ -1,3 +1,4 @@
+# pyright: reportPrivateImportUsage=false
 """
 第三章 大语言模型基础 - Transformer 模型实现
 从零实现 Transformer 的完整结构：多头注意力、位置编码、编码器/解码器。

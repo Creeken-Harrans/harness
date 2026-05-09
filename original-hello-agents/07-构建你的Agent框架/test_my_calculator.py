@@ -2,7 +2,7 @@
 第七章 构建你的Agent框架 - 测试计算器工具
 """
 from dotenv import load_dotenv
-from my_calculator_tool import create_calculator_registry
+from my_calculator_tool import create_calculator_registry  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 load_dotenv("/home/Creeken/Paper/harness/.env")
 

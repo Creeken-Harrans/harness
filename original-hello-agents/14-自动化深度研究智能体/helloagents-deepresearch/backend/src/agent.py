@@ -13,18 +13,18 @@ from hello_agents import HelloAgentsLLM, ToolAwareSimpleAgent
 from hello_agents.tools import ToolRegistry
 from hello_agents.tools.builtin.note_tool import NoteTool
 
-from config import Configuration
-from prompts import (
+from .config import Configuration
+from .prompts import (
     report_writer_instructions,
     task_summarizer_instructions,
     todo_planner_system_prompt,
 )
-from models import SummaryState, SummaryStateOutput, TodoItem
-from services.planner import PlanningService
-from services.reporter import ReportingService
-from services.search import dispatch_search, prepare_research_context
-from services.summarizer import SummarizationService
-from services.tool_events import ToolCallTracker
+from .models import SummaryState, SummaryStateOutput, TodoItem
+from .services.planner import PlanningService
+from .services.reporter import ReportingService
+from .services.search import dispatch_search, prepare_research_context
+from .services.summarizer import SummarizationService
+from .services.tool_events import ToolCallTracker
 
 logger = logging.getLogger(__name__)
 
@@ -526,7 +526,7 @@ class DeepResearchAgent:
 
             note_id = parameters.get("note_id")
             if not note_id:
-                note_id = self._tool_tracker._extract_note_id(event.get("result", ""))  # type: ignore[attr-defined]
+                note_id = self._tool_tracker._extract_note_id(event.get("result", ""))
 
             if note_id:
                 return note_id

@@ -33,7 +33,7 @@ import time
 # 导入 CodebaseMaintainer
 import sys
 sys.path.append('.')
-from codebase_maintainer import CodebaseMaintainer
+from codebase_maintainer import CodebaseMaintainer  # type: ignore[reportMissingImports]  # 运行时通过 sys.path.append('.') 解析
 
 
 def day_1_exploration(maintainer):

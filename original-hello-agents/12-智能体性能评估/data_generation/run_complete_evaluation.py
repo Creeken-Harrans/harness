@@ -23,7 +23,7 @@ import json
 import os
 import sys
 from datetime import datetime
-from aime_generator import AIMEGenerator
+from aime_generator import AIMEGenerator  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.tools import LLMJudgeTool, WinRateTool
 
@@ -131,8 +131,8 @@ def run_complete_evaluation(
         # 生成综合报告
         report = generate_comprehensive_report(
             generated_data_path,
-            llm_judge_result,
-            win_rate_result
+            llm_judge_result,  # type: ignore[arg-type]  # json.loads() 返回 Any，运行时已检查非 None
+            win_rate_result  # type: ignore[arg-type]  # json.loads() 返回 Any，运行时已检查非 None
         )
 
         with open(comprehensive_report_path, 'w', encoding='utf-8') as f:

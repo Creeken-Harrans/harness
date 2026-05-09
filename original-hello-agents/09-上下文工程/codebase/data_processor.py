@@ -66,7 +66,7 @@ def aggregate_data(df: pd.DataFrame, group_by: List[str]) -> pd.DataFrame:
     Returns:
         聚合后的DataFrame
     """
-    return df.groupby(group_by).agg({  # type: ignore[return-type]
+    return df.groupby(group_by).agg({  # type: ignore[return-type]  # pandas groupby.agg 返回类型过于复杂，运行时确保为 DataFrame
         'value': ['sum', 'mean', 'count']
     })
 

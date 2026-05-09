@@ -199,7 +199,37 @@ class ReflectionAgent(Agent):
         ]
         return self._get_llm_response(messages, **kwargs)
 
-    def _get_llm_response(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    def _build_reflection_prompt(self, input_text: str, current_response: str) -> str:
+        """构建反思提示词（供异步流式调用使用）"""
+        return f"""请仔细审查以下回答，并找出可能的问题或改进空间：
+
+# 原始任务:
+{input_text}
+
+# 当前回答:
+{current_response}
+
+请分析这个回答的质量，指出不足之处，并提出具体的改进建议。
+如果回答已经很好，请回答"无需改进"."""
+
+    def _build_refinement_prompt(
+        self, input_text: str, current_response: str, reflection: str
+    ) -> str:
+        """构建优化提示词（供异步流式调用使用）"""
+        return f"""请根据反馈意见改进你的回答：
+
+# 原始任务:
+{input_text}
+
+# 上一轮回答:
+{current_response}
+
+# 反馈意见:
+{reflection}
+
+请提供一个改进后的回答。"""
+
+    def _get_llm_response(self, messages: List[Dict[str, Any]], **kwargs) -> str:
         """
         调用LLM并获取完整响应（支持 Function Calling）
 
@@ -291,7 +321,7 @@ class ReflectionAgent(Agent):
 
         return ""
 
-    async def arun_stream(  # type: ignore[override]
+    async def arun_stream(  # type: ignore[override]  # 子类流式接口签名与基类不同，异步生成器返回类型简化
         self,
         input_text: str,
         on_start: LifecycleHook = None,

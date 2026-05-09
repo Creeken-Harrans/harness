@@ -388,7 +388,7 @@ class ReActAgent(Agent):
 
         return final_answer
 
-    def _build_messages(self, input_text: str) -> List[Dict[str, str]]:
+    def _build_messages(self, input_text: str) -> List[Dict[str, Any]]:
         """构建消息列表"""
         messages = []
 
@@ -880,7 +880,7 @@ class ReActAgent(Agent):
 
         return results
 
-    async def arun_stream(  # type: ignore[override]
+    async def arun_stream(  # type: ignore[override]  # 子类流式接口签名与基类不同，异步生成器返回类型简化
         self,
         input_text: str,
         on_start: LifecycleHook = None,

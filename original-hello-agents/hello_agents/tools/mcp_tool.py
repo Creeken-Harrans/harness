@@ -5,11 +5,14 @@ from typing import Dict, Any, Callable
 
 
 class MCPTool:
-    def __init__(self, server_command=None, server_url=None):
+    def __init__(self, server_command=None, server_url=None, name="mcp", description="MCP Tool"):
+        self.name = name
+        self.description = description
         self.server_command = server_command
         self.server_url = server_url
         self.tools: Dict[str, Callable[..., Any]] = {}
         self._connected = False
+        self._amap_api_key: str = ""  # ch13 高德地图 API key
 
     def run(self, params: dict | str) -> str:
         if isinstance(params, str):

@@ -267,7 +267,7 @@ class SimpleAgent(Agent):
 
         return final_response
 
-    def _build_messages(self, input_text: str) -> List[Dict[str, str]]:
+    def _build_messages(self, input_text: str) -> List[Dict[str, Any]]:
         """构建消息列表"""
         messages = []
 
@@ -315,7 +315,8 @@ class SimpleAgent(Agent):
     def remove_tool(self, tool_name: str) -> bool:
         """移除工具（便利方法）"""
         if self.tool_registry:
-            return self.tool_registry.unregister_tool(tool_name)
+            self.tool_registry.unregister(tool_name)
+            return True
         return False
 
     def list_tools(self) -> list:
@@ -360,7 +361,7 @@ class SimpleAgent(Agent):
         self.add_message(Message(input_text, "user"))
         self.add_message(Message(full_response, "assistant"))
 
-    async def arun_stream(  # type: ignore[override]
+    async def arun_stream(  # type: ignore[override]  # 子类流式接口签名与基类不同，异步生成器返回类型简化
         self,
         input_text: str,
         on_start: LifecycleHook = None,
@@ -434,3 +435,43 @@ class SimpleAgent(Agent):
                 error_type=type(e).__name__
             )
             raise
+
+
+class ToolAwareSimpleAgent(SimpleAgent):
+    """工具感知型 SimpleAgent — 用于 ch14 深度研究等场景。
+
+    相比 SimpleAgent 增加对 tool_call_listener 回调的支持，
+    每次工具调用都会触发回调以记录工具事件。
+    """
+
+    def __init__(
+        self,
+        name: str,
+        llm: HelloAgentsLLM,
+        system_prompt: Optional[str] = None,
+        config: Optional[Config] = None,
+        tool_registry: Optional['ToolRegistry'] = None,
+        enable_tool_calling: bool = True,
+        max_tool_iterations: int = 3,
+        tool_call_listener: Any = None,
+    ):
+        super().__init__(
+            name=name,
+            llm=llm,
+            system_prompt=system_prompt,
+            config=config,
+            tool_registry=tool_registry,
+            enable_tool_calling=enable_tool_calling,
+            max_tool_iterations=max_tool_iterations,
+        )
+        self._tool_call_listener = tool_call_listener
+
+    def _execute_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> str:
+        result = super()._execute_tool_call(tool_name, arguments)
+        if self._tool_call_listener and callable(self._tool_call_listener):
+            self._tool_call_listener({
+                "tool_name": tool_name,
+                "arguments": arguments,
+                "result": result,
+            })
+        return result

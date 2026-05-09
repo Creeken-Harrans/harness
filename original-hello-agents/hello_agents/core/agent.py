@@ -45,6 +45,12 @@ class Agent(ABC):
         # 工具注册表（可选）
         self.tool_registry = tool_registry
 
+        # 工作目录（可由子类设置）
+        self.working_dir: Optional[str] = None
+
+        # 消息历史（用于调试和统计）
+        self.message_history: List[Message] = []
+
         # 新增：上下文工程组件
         from hello_agents.context.history import HistoryManager
         from hello_agents.context.truncator import ObservationTruncator
@@ -63,7 +69,7 @@ class Agent(ABC):
 
         # 新增：Token 计数器（缓存 + 增量计算）
         from ..context.token_counter import TokenCounter
-        self.token_counter = TokenCounter(model=self.llm.model)
+        self.token_counter = TokenCounter(model=self.llm.model or "unknown")
         self._history_token_count = 0  # 缓存历史 Token 数
 
         # 新增：可观测性组件
@@ -1010,9 +1016,6 @@ class Agent(ABC):
         # 临时移除不允许的工具
         for tool_name in original_tools:
             if tool_name not in filtered_tools:
-                self.tool_registry._temp_disabled_tools = getattr(
-                    self.tool_registry, '_temp_disabled_tools', {}
-                )
                 tool = self.tool_registry.get_tool(tool_name)
                 if tool:
                     self.tool_registry._temp_disabled_tools[tool_name] = tool
@@ -1032,12 +1035,11 @@ class Agent(ABC):
             return
 
         # 恢复被禁用的工具
-        if hasattr(self.tool_registry, '_temp_disabled_tools'):
-            for tool_name, tool in self.tool_registry._temp_disabled_tools.items():
-                self.tool_registry._tools[tool_name] = tool
+        for tool_name, tool in self.tool_registry._temp_disabled_tools.items():
+            self.tool_registry._tools[tool_name] = tool
 
-            # 清空临时禁用列表
-            self.tool_registry._temp_disabled_tools = {}
+        # 清空临时禁用列表
+        self.tool_registry._temp_disabled_tools = {}
 
     def _get_subagent_metadata(self, duration: float, error: Optional[str]) -> Dict[str, Any]:
         """获取子代理执行元数据

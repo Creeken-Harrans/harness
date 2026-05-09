@@ -4,7 +4,7 @@ import sys
 import os
 
 # 添加HelloAgents到Python路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'HelloAgents'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))  # 添加 original-hello-agents 以导入 hello_agents
 
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from typing import Dict, Optional, Tuple

@@ -3,7 +3,7 @@
 """
 from dotenv import load_dotenv
 from hello_agents.core.llm import HelloAgentsLLM
-from my_plan_solve_agent import MyPlanAndSolveAgent
+from my_plan_solve_agent import MyPlanAndSolveAgent  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 load_dotenv("/home/Creeken/Paper/harness/.env")
 

@@ -31,7 +31,7 @@ class SearchState(TypedDict):
 # 初始化模型和Tavily客户端
 llm = ChatOpenAI(
     model=os.getenv("LLM_MODEL_ID", "gpt-4o-mini"),
-    api_key=os.getenv("LLM_API_KEY"),
+    api_key=os.getenv("LLM_API_KEY"),  # type: ignore[arg-type]  # langchain 类型桩要求 SecretStr，运行时接受 str
     base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
     temperature=0.7
 )
@@ -62,9 +62,9 @@ def understand_query_node(state: SearchState) -> dict:
     response = llm.invoke([SystemMessage(content=understand_prompt)])
     
     # 提取搜索关键词
-    response_text = response.content
+    response_text = response.content if isinstance(response.content, str) else str(response.content)
     search_query = user_message  # 默认使用原始查询
-    
+
     if "搜索词：" in response_text:
         search_query = response_text.split("搜索词：")[1].strip()
     elif "搜索关键词：" in response_text:
@@ -237,7 +237,7 @@ async def main():
             print("\n" + "="*60)
             
             # 执行工作流
-            async for output in app.astream(initial_state, config=config):
+            async for output in app.astream(initial_state, config=config):  # type: ignore[arg-type]  # langgraph 类型桩与运行时行为不完全匹配
                 for node_name, node_output in output.items():
                     if "messages" in node_output and node_output["messages"]:
                         latest_message = node_output["messages"][-1]

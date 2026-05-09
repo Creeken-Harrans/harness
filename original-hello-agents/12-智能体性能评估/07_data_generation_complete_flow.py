@@ -21,9 +21,9 @@ import sys
 import os
 
 # 添加HelloAgents路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "HelloAgents"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # 添加 original-hello-agents 以导入 hello_agents
 
-from data_generation.run_complete_evaluation import main
+from data_generation.run_complete_evaluation import main  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析子目录模块
 
 if __name__ == "__main__":
     # 默认参数
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     print()
     
     # 运行完整流程
-    main(num_problems, delay_seconds)
+    main(num_problems, delay_seconds)  # type: ignore[call-arg]  # 教程脚本：main() 导入版本参数不匹配，但运行时通过全局变量传递
 
 # 运行输出示例：
 # ================================================================================

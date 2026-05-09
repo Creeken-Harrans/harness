@@ -29,11 +29,11 @@ print("✅ 服务注册完成")
 from hello_agents.protocols import discover_service
 
 # 按类型查找
-nlp_services = discover_service(discovery, service_type="nlp")
-print(f"找到 {len(nlp_services)} 个NLP服务")
+nlp_services = discover_service(discovery, service_type="nlp")  # type: ignore[assignment]  # ANP 协议桩返回宽类型，运行时为 list
+print(f"找到 {len(nlp_services)} 个NLP服务")  # type: ignore[arg-type]  # ANP 协议桩返回类型不完整
 
 # 选择负载最低的服务
-best_service = min(nlp_services, key=lambda s: s.metadata.get("load", 1.0))
+best_service = min(nlp_services, key=lambda s: s.metadata.get("load", 1.0))  # type: ignore[arg-type]  # ANP 协议桩 ServiceInfo.metadata 运行时可用
 print(f"最佳服务：{best_service.service_name} (负载: {best_service.metadata['load']})")
 
 from hello_agents.protocols import ANPNetwork

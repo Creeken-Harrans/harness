@@ -1,16 +1,20 @@
 """TerminalTool — safe terminal execution for chapter 9."""
 import json
 import subprocess
-from typing import Dict, Any
+from .base import LightweightTool
 
 
-class TerminalTool:
-    def __init__(self, workspace=".", allowed_commands=None):
-        self.workspace = workspace
+class TerminalTool(LightweightTool):
+    def __init__(self, workspace=".", allowed_commands=None, **kwargs):
+        super().__init__(name="terminal", description="Terminal execution tool")
+        self.workspace = kwargs.pop("workspace", workspace)
         self.allowed_commands = allowed_commands or ["ls", "cat", "head", "tail",
             "wc", "find", "grep", "echo", "pwd", "python", "git", "du", "df"]
+        self._timeout = kwargs.pop("timeout", 30)
+        self._extra_config = kwargs
 
-    def run(self, params):
+    # 教程兼容：run 简化签名故意与 Tool 基类不同，接受 str|dict 并返回 str
+    def run(self, params):  # type: ignore[override]  # 教程简化协议：run() 返回 str 而非 ToolResponse
         if isinstance(params, str):
             params = {"action": "execute", "command": params}
         action = params.get("action", "execute")

@@ -12,8 +12,8 @@ from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from config import Configuration, SearchAPI
-from agent import DeepResearchAgent
+from .config import Configuration, SearchAPI
+from .agent import DeepResearchAgent
 
 # 添加控制台日志处理程序
 logger.add(

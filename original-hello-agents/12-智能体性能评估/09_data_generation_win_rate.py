@@ -16,7 +16,7 @@ import os
 import json
 
 # 添加HelloAgents路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "HelloAgents"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # 添加 original-hello-agents 以导入 hello_agents
 
 from hello_agents import HelloAgentsLLM
 from hello_agents.evaluation import WinRateEvaluator, AIDataset

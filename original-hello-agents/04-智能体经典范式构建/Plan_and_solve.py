@@ -5,7 +5,7 @@
 import os
 import ast
 from openai.types.chat import ChatCompletionMessageParam
-from llm_client import HelloAgentsLLM
+from hello_agents import HelloAgentsLLM
 
 # --- 1. 规划器 (Planner) 定义 ---
 PLANNER_PROMPT_TEMPLATE = """
@@ -31,7 +31,8 @@ class Planner:
         messages: list[ChatCompletionMessageParam] = [{"role": "user", "content": prompt}]
 
         print("--- 正在生成计划 ---")
-        response_text = self.llm_client.think(messages=messages) or ""
+        raw_response = self.llm_client.think(messages=messages)  # type: ignore[arg-type]  # 教程兼容：think 接受 ChatCompletionMessageParam，类型标注为 Dict[str, str]
+        response_text: str = "".join(raw_response) if hasattr(raw_response, '__iter__') else str(raw_response)
         print(f"✅ 计划已生成:\n{response_text}")
 
         try:
@@ -82,13 +83,14 @@ class Executor:
             )
             messages: list[ChatCompletionMessageParam] = [{"role": "user", "content": prompt}]
 
-            response_text = self.llm_client.think(messages=messages) or ""
+            raw_response = self.llm_client.think(messages=messages)  # type: ignore[arg-type]  # 教程兼容
+            response_text: str = "".join(raw_response) if hasattr(raw_response, '__iter__') else str(raw_response)
 
             history += f"步骤 {i}: {step}\n结果: {response_text}\n\n"
             final_answer = response_text
             print(f"✅ 步骤 {i} 已完成，结果: {final_answer}")
 
-        return final_answer
+        return final_answer or ""
 
 
 # --- 3. 智能体 (Agent) 整合 ---

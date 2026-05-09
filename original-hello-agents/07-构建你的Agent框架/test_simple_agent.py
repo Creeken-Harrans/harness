@@ -4,7 +4,7 @@
 from dotenv import load_dotenv
 from hello_agents import HelloAgentsLLM, ToolRegistry
 from hello_agents.tools import CalculatorTool
-from my_simple_agent import MySimpleAgent
+from my_simple_agent import MySimpleAgent  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 load_dotenv("/home/Creeken/Paper/harness/.env")
 

@@ -19,6 +19,7 @@ class BaseLLMAdapter(ABC):
         self.model = model
         self._client = None
         self._async_client = None
+        self.last_stats: Optional[StreamStats] = None
 
     @abstractmethod
     def create_client(self) -> Any:
@@ -461,7 +462,7 @@ class GeminiAdapter(BaseLLMAdapter):
                 "使用Gemini需要安装: pip install google-generativeai"
             )
 
-        genai.configure(api_key=self.api_key)
+        genai.configure(api_key=self.api_key)  # type: ignore[reportMissingImports]  # google-generativeai 库未提供完整类型桩
         return genai
 
     def _convert_messages(self, messages: List[Dict]) -> tuple[Optional[str], List[Dict]]:

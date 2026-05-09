@@ -3,19 +3,20 @@
 三国狼人杀 - 基于AgentScope的中文版狼人杀游戏
 融合三国演义角色和传统狼人杀玩法
 """
+
 import asyncio
 import os
 import random
 from typing import List, Dict, Optional
 
-from agentscope.agent import ReActAgent
+from agentscope.agent import ReActAgent, AgentBase
 from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import MsgHub, sequential_pipeline, fanout_pipeline
 from agentscope.formatter import DashScopeMultiAgentFormatter
 
-from prompt_cn import ChinesePrompts
-from game_roles import GameRoles
-from structured_output_cn import (
+from prompt_cn import ChinesePrompts  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
+from game_roles import GameRoles  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
+from structured_output_cn import (  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
     DiscussionModelCN,
     get_vote_model_cn,
     WitchActionModelCN,
@@ -23,7 +24,7 @@ from structured_output_cn import (
     get_hunter_model_cn,
     WerewolfKillModelCN
 )
-from utils_cn import (
+from utils_cn import (  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
     check_winning_cn,
     majority_vote_cn,
     get_chinese_name,
@@ -41,12 +42,12 @@ class ThreeKingdomsWerewolfGame:
         self.players: Dict[str, ReActAgent] = {}
         self.roles: Dict[str, str] = {}
         self.moderator = GameModerator()
-        self.alive_players: List[ReActAgent] = []
-        self.werewolves: List[ReActAgent] = []
-        self.villagers: List[ReActAgent] = []
-        self.seer: List[ReActAgent] = []
-        self.witch: List[ReActAgent] = []
-        self.hunter: List[ReActAgent] = []
+        self.alive_players: list = []  # type: ignore[type-arg]  # agentscope AgentBase 类型桩不完整，list 元素类型省略
+        self.werewolves: list = []     # type: ignore[type-arg]
+        self.villagers: list = []      # type: ignore[type-arg]
+        self.seer: list = []           # type: ignore[type-arg]
+        self.witch: list = []          # type: ignore[type-arg]
+        self.hunter: list = []         # type: ignore[type-arg]
         
         # 女巫道具状态
         self.witch_has_antidote = True
@@ -181,13 +182,13 @@ class ThreeKingdomsWerewolfGame:
             print(f"⚠️ 预言家未选择查验目标,跳过此阶段")
             return
 
-        target_role = self.roles.get(target_name, "村民")
+        target_role = self.roles.get(str(target_name), "村民")  # agentscope metadata.get 返回宽类型，运行时为 str
         
         # 告知预言家结果
         result_msg = f"查验结果：{target_name}是{'狼人' if target_role == '狼人' else '好人'}"
         await seer_agent.observe(await self.moderator.announce(result_msg))
     
-    async def witch_phase(self, killed_player: str):
+    async def witch_phase(self, killed_player: str | None):
         """女巫阶段"""
         if not self.witch:
             return killed_player, None

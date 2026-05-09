@@ -23,7 +23,7 @@ st.subheader('获取最新的比特币价格信息及其24小时价格变化趋�
 
 # 添加刷新按钮
 if st.button('刷新价格'):
-    st.experimental_rerun()
+    st.experimental_rerun()  # type: ignore[attr-defined]  # streamlit 新版中 experimental_rerun 已更名为 rerun
 
 # 显示加载状态
 with st.spinner('加载中...'):

@@ -3,7 +3,7 @@
 import asyncio
 from datetime import datetime
 from typing import Dict, Optional
-from batch_generator import get_batch_generator
+from batch_generator import get_batch_generator  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 class NPCStateManager:
     """NPC状态管理器

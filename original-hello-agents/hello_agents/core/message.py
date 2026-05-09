@@ -1,6 +1,6 @@
 """消息系统"""
 
-from typing import Optional, Dict, Any, Literal
+from typing import Optional, Dict, Any, List, Literal
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ class Message(BaseModel):
     role: MessageRole
     timestamp: Optional[datetime] = None
     metadata: Optional[Dict[str, Any]] = None
+    tool_calls: Optional[List[Dict[str, Any]]] = None
 
     def __init__(self, content: str, role: MessageRole, **kwargs):
         super().__init__(

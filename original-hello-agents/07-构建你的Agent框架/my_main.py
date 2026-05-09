@@ -3,7 +3,7 @@
 演示使用自定义的 MyLLM 调用 ModelScope provider。
 """
 from dotenv import load_dotenv
-from my_llm import MyLLM
+from my_llm import MyLLM  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 # 加载环境变量
 load_dotenv("/home/Creeken/Paper/harness/.env")

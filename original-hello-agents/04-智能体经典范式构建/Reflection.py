@@ -4,7 +4,7 @@
 """
 from typing import List, Dict, Any, Optional
 from openai.types.chat import ChatCompletionMessageParam
-from llm_client import HelloAgentsLLM
+from hello_agents import HelloAgentsLLM
 
 
 # --- 模块 1: 记忆模块 ---

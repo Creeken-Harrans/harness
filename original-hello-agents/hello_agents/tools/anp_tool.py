@@ -4,8 +4,11 @@ from typing import Dict, Any
 
 
 class ANPTool:
-    def __init__(self):
-        self.services: Dict[str, dict] = {}
+    def __init__(self, name="anp", description="ANP Tool", discovery=None):
+        self.name = name
+        self.description = description
+        self.discovery = discovery
+        self.services: dict = {}
 
     def run(self, params):
         if isinstance(params, str):

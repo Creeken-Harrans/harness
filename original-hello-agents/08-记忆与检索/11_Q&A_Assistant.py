@@ -246,7 +246,7 @@ class PDFLearningAssistant:
 def create_gradio_ui():
     """创建Gradio Web UI"""
     # 全局助手实例
-    assistant_state: dict[str, object] = {"assistant": None}
+    assistant_state: dict[str, Any] = {"assistant": None}
 
     def init_assistant(user_id: str) -> str:
         """初始化助手"""
@@ -335,7 +335,7 @@ def create_gradio_ui():
         return result
 
     # 创建Gradio界面
-    with gr.Blocks(title="智能文档问答助手", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="智能文档问答助手", theme=gr.themes.Soft()) as demo:  # type: ignore[attr-defined]  # gradio 版本差异，themes.Soft 在新版中路径可能不同
         gr.Markdown("""
         # 📚 智能文档问答助手
 
@@ -374,7 +374,7 @@ def create_gradio_ui():
             chatbot = gr.Chatbot(
                 label="对话历史",
                 height=400,
-                bubble_full_width=False
+                bubble_full_width=False  # type: ignore[call-arg]  # gradio 版本差异，bubble_full_width 在新版中已移除
             )
             with gr.Row():
                 msg_input = gr.Textbox(

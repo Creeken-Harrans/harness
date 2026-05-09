@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from ...models.schemas import (
     POISearchResponse,
+    RouteInfo,
     RouteRequest,
     RouteResponse,
     WeatherResponse
@@ -126,7 +127,7 @@ async def plan_route(request: RouteRequest):
         return RouteResponse(
             success=True,
             message="路线规划成功",
-            data=route_info
+            data=RouteInfo(**route_info) if route_info else None
         )
         
     except Exception as e:

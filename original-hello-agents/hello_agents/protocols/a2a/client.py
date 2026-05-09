@@ -9,3 +9,7 @@ class A2AClient:
 
     def send_task(self, task):
         return {"status": "ok", "result": f"A2A result for: {task}"}
+
+    def execute_skill(self, skill_name, input_data=None):
+        """Alias for send_task, used by A2A application examples."""
+        return self.send_task(f"{skill_name}: {input_data or ''}")

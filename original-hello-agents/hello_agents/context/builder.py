@@ -70,10 +70,14 @@ class ContextBuilder:
 
     def __init__(
         self,
-        config: Optional[ContextConfig] = None
+        config: Optional[ContextConfig] = None,
+        **kwargs
     ):
         self.config = config or ContextConfig()
         self._encoding = tiktoken.get_encoding("cl100k_base")
+        self._memory_tool = kwargs.pop("memory_tool", None)
+        self._rag_tool = kwargs.pop("rag_tool", None)
+        self._extra_config = kwargs
     
     def build(
         self,

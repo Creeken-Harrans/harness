@@ -5,7 +5,9 @@ from typing import Dict, Any, Callable
 
 
 class A2ATool:
-    def __init__(self, agent_url="http://localhost:5000"):
+    def __init__(self, agent_url="http://localhost:5000", name="a2a", description="A2A Tool"):
+        self.name = name
+        self.description = description
         self.agent_url = agent_url
         self.skills: Dict[str, Dict[str, Any]] = {}
 

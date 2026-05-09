@@ -7,10 +7,10 @@ from datetime import datetime
 from typing import Dict, Optional
 
 # 添加HelloAgents到Python路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'HelloAgents'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))  # 添加 original-hello-agents 以导入 hello_agents
 
 from hello_agents import HelloAgentsLLM
-from agents import NPC_ROLES
+from agents import NPC_ROLES  # type: ignore[reportMissingImports]  # 运行时通过 sys.path 解析同目录模块
 
 class NPCBatchGenerator:
     """批量生成NPC对话的生成器
@@ -83,7 +83,8 @@ class NPCBatchGenerator:
             ])
 
             # 解析JSON响应
-            dialogues = self._parse_response(response)
+            response_text = response.content if hasattr(response, 'content') else str(response)
+            dialogues = self._parse_response(response_text)
 
             if dialogues:
                 print(f"✅ 批量生成成功: {len(dialogues)}个NPC对话")

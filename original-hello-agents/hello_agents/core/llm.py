@@ -55,6 +55,7 @@ class HelloAgentsLLM:
         self.model = model or os.getenv("LLM_MODEL_ID")
         self.api_key = api_key or os.getenv("LLM_API_KEY")
         self.base_url = base_url or os.getenv("LLM_BASE_URL")
+        self.provider = model or os.getenv("LLM_MODEL_ID", "default")
         self.timeout = timeout or int(os.getenv("LLM_TIMEOUT", "60"))
 
         self.temperature = temperature

@@ -21,7 +21,7 @@ from .core.message import Message
 from .core.exceptions import HelloAgentsException
 
 # Agent实现
-from .agents.simple_agent import SimpleAgent
+from .agents.simple_agent import SimpleAgent, ToolAwareSimpleAgent
 from .agents.react_agent import ReActAgent
 from .agents.reflection_agent import ReflectionAgent
 from .agents.plan_solve_agent import PlanSolveAgent
@@ -29,6 +29,7 @@ from .agents.plan_solve_agent import PlanSolveAgent
 # 工具系统
 from .tools.registry import ToolRegistry, global_registry
 from .tools.builtin.calculator import CalculatorTool, calculate
+from .tools import search
 
 __all__ = [
     # 版本信息
@@ -45,6 +46,7 @@ __all__ = [
 
     # Agent范式
     "SimpleAgent",
+    "ToolAwareSimpleAgent",
     "ReActAgent",
     "ReflectionAgent",
     "PlanSolveAgent",
@@ -54,5 +56,6 @@ __all__ = [
     "global_registry",
     "CalculatorTool",
     "calculate",
+    "search",
 ]
 

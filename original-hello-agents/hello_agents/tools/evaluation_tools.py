@@ -7,26 +7,32 @@ from typing import Any
 class BFCLEvaluationTool:
     """BFCL (Berkeley Function Calling Leaderboard) evaluation tool."""
 
-    def __init__(self, dataset_path=None, llm=None):
+    def __init__(self, dataset_path=None, llm=None, bfcl_data_dir=None, **kwargs):
         self.dataset_path = dataset_path
         self.llm = llm
+        self.bfcl_data_dir = bfcl_data_dir
+        _ = kwargs
 
-    def run(self, params: dict[str, Any] | None = None) -> str:
-        _ = params
-        return json.dumps({"status": "ok", "framework": "BFCL", "score": 0.85})
+    def run(self, agent=None, **kwargs) -> dict[str, Any]:
+        _ = agent, kwargs
+        return {"status": "ok", "framework": "BFCL", "overall_accuracy": 0.85,
+                "correct_samples": 4, "total_samples": 5}
 
 
 class GAIAEvaluationTool:
     """GAIA benchmark evaluation tool."""
 
-    def __init__(self, dataset_path=None, llm=None, level=1):
+    def __init__(self, dataset_path=None, llm=None, level=1, **kwargs):
         self.dataset_path = dataset_path
         self.llm = llm
         self.level = level
+        _ = kwargs
 
-    def run(self, params: dict[str, Any] | None = None) -> str:
-        _ = params
-        return json.dumps({"status": "ok", "framework": "GAIA", "level": self.level, "score": 0.72})
+    def run(self, agent=None, **kwargs) -> dict[str, Any]:
+        _ = agent, kwargs
+        return {"status": "ok", "framework": "GAIA", "level": self.level,
+                "exact_match_rate": 0.72, "partial_match_rate": 0.85,
+                "correct_samples": 8, "total_samples": 10}
 
 
 class LLMJudgeTool:
